@@ -23,6 +23,9 @@ coverage/
 .DS_Store
 Thumbs.db
 
+# Generated key files
+.keys/
+
 # Logs
 logs/
 *.log
@@ -37,3 +40,7 @@ pnpm-lock.yaml
 
 # TypeScript cache
 *.tsbuildinfo
+
+*.pem
+*.key
+*.crt
