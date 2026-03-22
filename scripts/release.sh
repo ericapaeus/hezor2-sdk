@@ -6,6 +6,8 @@ set -euo pipefail
 #   pnpm release:patch   →  0.5.0 → 0.5.1
 #   pnpm release:minor   →  0.5.0 → 0.6.0
 #   pnpm release:major   →  0.5.0 → 1.0.0
+#
+# Flow: commit → typecheck → build → test → bump → push
 # ──────────────────────────────────────────────────────────
 
 BUMP="${1:-patch}"
@@ -15,13 +17,14 @@ if [[ "$BUMP" != "patch" && "$BUMP" != "minor" && "$BUMP" != "major" ]]; then
   exit 1
 fi
 
-# Ensure clean working tree
+# Commit any pending changes
 if [[ -n "$(git status --porcelain)" ]]; then
-  echo "✗ Working tree is dirty. Commit or stash changes first."
-  exit 1
+  echo "▸ Committing changes…"
+  git add -A
+  read -r -p "  Commit message: " MSG
+  git commit -m "${MSG:-chore: update}"
 fi
 
-# Run checks
 echo "▸ Type checking…"
 pnpm typecheck
 
