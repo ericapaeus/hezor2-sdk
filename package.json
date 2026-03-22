@@ -8,13 +8,13 @@
     "sdk",
     "utilities"
   ],
-  "homepage": "https://github.com/hezor/hezor2-sdk#readme",
+  "homepage": "https://github.com/ericapaeus/hezor2-sdk#readme",
   "bugs": {
-    "url": "https://github.com/hezor/hezor2-sdk/issues"
+    "url": "https://github.com/ericapaeus/hezor2-sdk/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hezor/hezor2-sdk.git"
+    "url": "git+https://github.com/ericapaeus/hezor2-sdk.git"
   },
   "license": "MIT",
   "author": "Hezor",
