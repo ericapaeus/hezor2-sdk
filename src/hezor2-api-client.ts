@@ -5,8 +5,11 @@
  */
 
 import { BaseAPIClient, type BaseAPIClientOptions } from './base-api-client.js'
+import { REQ_HEADER_META_INFO_KEY } from './constants.js'
 import { DEFAULT_API_BASE_URL, DEFAULT_API_KEY } from './env-config.js'
 import type {
+  ConnectRefreshResponse,
+  ConnectVerifyResponse,
   CreationGenerateResult,
   CreationGenerateResultV2,
   DataRetrieveResult,
@@ -186,5 +189,112 @@ export class Hezor2APIClient extends BaseAPIClient {
       webhookPayload,
     )
     return resp.data!
+  }
+
+  // ── Connect login ─────────────────────────────────────────────────────────
+
+  /**
+   * Sign a fresh meta_info JWT using the client's configured key material.
+   * Returns the raw JWT string.
+   */
+  private async signMetaInfoJwt(): Promise<string> {
+    const headers = await this.getHeaders()
+    const jwt = headers[REQ_HEADER_META_INFO_KEY]
+    if (!jwt) {
+      throw new Error(
+        'Cannot sign meta_info JWT: metaInfo or private key not configured on this client',
+      )
+    }
+    return jwt
+  }
+
+  /**
+   * Verify a Connect app identity.
+   *
+   * Calls `POST /auth/connect/verify` with `app_name`, signed `meta_info` JWT,
+   * and `callback_url`. The meta_info JWT is signed using the client's
+   * configured private key.
+   *
+   * @param callbackUrl - The callback URL to verify (must be in the app's redirect_uris)
+   */
+  async connectVerify(callbackUrl: string): Promise<ConnectVerifyResponse> {
+    if (!this.appName) {
+      throw new Error('appName is required for Connect verify')
+    }
+
+    const metaInfoJwt = await this.signMetaInfoJwt()
+
+    const response = await this.post('/auth/connect/verify', {
+      json: {
+        app_name: this.appName,
+        meta_info: metaInfoJwt,
+        callback_url: callbackUrl,
+      },
+      skipAuth: true,
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(`Connect verify failed: ${response.status} ${text}`)
+    }
+
+    return (await response.json()) as ConnectVerifyResponse
+  }
+
+  /**
+   * Refresh a Connect token.
+   *
+   * Calls `POST /auth/connect/refresh` with `app_name`, a freshly signed
+   * `meta_info` JWT, and the `refresh_token`. Returns new tokens.
+   *
+   * @param refreshToken - The refresh token obtained from Connect login callback
+   */
+  async connectRefresh(refreshToken: string): Promise<ConnectRefreshResponse> {
+    if (!this.appName) {
+      throw new Error('appName is required for Connect refresh')
+    }
+
+    const metaInfoJwt = await this.signMetaInfoJwt()
+
+    const response = await this.post('/auth/connect/refresh', {
+      json: {
+        app_name: this.appName,
+        meta_info: metaInfoJwt,
+        refresh_token: refreshToken,
+      },
+      skipAuth: true,
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(`Connect refresh failed: ${response.status} ${text}`)
+    }
+
+    return (await response.json()) as ConnectRefreshResponse
+  }
+
+  /**
+   * Build a Connect login URL.
+   *
+   * Signs the MetaInfo JWT and constructs the full URL that a user should be
+   * redirected to in order to begin the Connect login flow.
+   *
+   * @param frontendUrl - The Hezor frontend base URL (e.g. "https://your-hezor-domain.com")
+   * @param callbackUrl - The callback URL to redirect to after login
+   */
+  async buildConnectUrl(frontendUrl: string, callbackUrl: string): Promise<string> {
+    if (!this.appName) {
+      throw new Error('appName is required for Connect URL')
+    }
+
+    const metaInfoJwt = await this.signMetaInfoJwt()
+
+    const params = new URLSearchParams({
+      app_name: this.appName,
+      meta_info: metaInfoJwt,
+      callback_url: callbackUrl,
+    })
+
+    return `${frontendUrl.replace(/\/+$/, '')}/connect?${params}`
   }
 }

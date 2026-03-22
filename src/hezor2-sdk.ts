@@ -12,6 +12,8 @@ import { DEFAULT_API_BASE_URL, DEFAULT_API_KEY } from './env-config.js'
 import { Hezor2APIClient } from './hezor2-api-client.js'
 import type { MetaInfoData } from './meta-info.js'
 import type {
+  ConnectRefreshResponse,
+  ConnectVerifyResponse,
   CreationGenerateResult,
   CreationGenerateResultV2,
   DataRetrieveResult,
@@ -146,5 +148,35 @@ export class Hezor2SDK {
     globalBaseUrl?: string
   }): Promise<PullConfigsResponse> {
     return this.client.pullConfigs(options)
+  }
+
+  // ── Connect login ─────────────────────────────────────────────────────────
+
+  /**
+   * Verify a Connect app identity.
+   *
+   * @param callbackUrl - The callback URL to verify
+   */
+  async connectVerify(callbackUrl: string): Promise<ConnectVerifyResponse> {
+    return this.client.connectVerify(callbackUrl)
+  }
+
+  /**
+   * Refresh a Connect token.
+   *
+   * @param refreshToken - The refresh token from Connect login
+   */
+  async connectRefresh(refreshToken: string): Promise<ConnectRefreshResponse> {
+    return this.client.connectRefresh(refreshToken)
+  }
+
+  /**
+   * Build a Connect login URL.
+   *
+   * @param frontendUrl - The Hezor frontend base URL
+   * @param callbackUrl - The callback URL to redirect to after login
+   */
+  async buildConnectUrl(frontendUrl: string, callbackUrl: string): Promise<string> {
+    return this.client.buildConnectUrl(frontendUrl, callbackUrl)
   }
 }

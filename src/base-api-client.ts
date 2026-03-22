@@ -98,13 +98,31 @@ export class BaseAPIClient {
     return headers
   }
 
+  /**
+   * Build headers for a request.
+   * When `skipAuth` is true, only `Content-Type: application/json` is included.
+   */
+  private async buildRequestHeaders(options?: {
+    headers?: Record<string, string>
+    skipAuth?: boolean
+  }): Promise<Record<string, string>> {
+    const headers = options?.skipAuth
+      ? { 'Content-Type': 'application/json' }
+      : await this.getHeaders()
+    if (options?.headers) Object.assign(headers, options.headers)
+    return headers
+  }
+
   /** Execute a GET request. */
   async get(
     path: string,
-    options?: { params?: Record<string, string>; headers?: Record<string, string> },
+    options?: {
+      params?: Record<string, string>
+      headers?: Record<string, string>
+      skipAuth?: boolean
+    },
   ): Promise<Response> {
-    const headers = await this.getHeaders()
-    if (options?.headers) Object.assign(headers, options.headers)
+    const headers = await this.buildRequestHeaders(options)
 
     let url = `${this.baseUrl}${path}`
     if (options?.params) {
@@ -125,10 +143,10 @@ export class BaseAPIClient {
     options?: {
       json?: unknown
       headers?: Record<string, string>
+      skipAuth?: boolean
     },
   ): Promise<Response> {
-    const headers = await this.getHeaders()
-    if (options?.headers) Object.assign(headers, options.headers)
+    const headers = await this.buildRequestHeaders(options)
 
     const init: RequestInit = {
       method: 'POST',
@@ -146,10 +164,10 @@ export class BaseAPIClient {
     options?: {
       json?: unknown
       headers?: Record<string, string>
+      skipAuth?: boolean
     },
   ): Promise<Response> {
-    const headers = await this.getHeaders()
-    if (options?.headers) Object.assign(headers, options.headers)
+    const headers = await this.buildRequestHeaders(options)
 
     const init: RequestInit = {
       method: 'PUT',
@@ -167,10 +185,10 @@ export class BaseAPIClient {
     options?: {
       json?: unknown
       headers?: Record<string, string>
+      skipAuth?: boolean
     },
   ): Promise<Response> {
-    const headers = await this.getHeaders()
-    if (options?.headers) Object.assign(headers, options.headers)
+    const headers = await this.buildRequestHeaders(options)
 
     const init: RequestInit = {
       method: 'PATCH',
@@ -185,10 +203,9 @@ export class BaseAPIClient {
   /** Execute a DELETE request. */
   async delete(
     path: string,
-    options?: { headers?: Record<string, string> },
+    options?: { headers?: Record<string, string>; skipAuth?: boolean },
   ): Promise<Response> {
-    const headers = await this.getHeaders()
-    if (options?.headers) Object.assign(headers, options.headers)
+    const headers = await this.buildRequestHeaders(options)
 
     return fetch(`${this.baseUrl}${path}`, {
       method: 'DELETE',

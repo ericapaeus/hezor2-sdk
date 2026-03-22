@@ -70,4 +70,9 @@ export type {
   ExecuteResponse,
   // Config
   PullConfigsResponse,
+  // Connect
+  ConnectVerifyRequest,
+  ConnectVerifyResponse,
+  ConnectRefreshRequest,
+  ConnectRefreshResponse,
 } from './types.js'

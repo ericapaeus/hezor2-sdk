@@ -268,6 +268,41 @@ export interface DataRetrieveResult {
 }
 
 // ---------------------------------------------------------------------------
+// Connect login models
+// ---------------------------------------------------------------------------
+
+export interface ConnectVerifyRequest {
+  app_name: string
+  meta_info: string
+  callback_url: string
+}
+
+export interface ConnectVerifyResponse {
+  valid: boolean
+  app_name: string
+  meta_info: Record<string, unknown>
+  callback_url: string
+}
+
+export interface ConnectRefreshRequest {
+  app_name: string
+  meta_info: string
+  refresh_token: string
+}
+
+export interface ConnectRefreshResponse {
+  access_token: string
+  refresh_token?: string
+  token_type: string
+  expires_in: number
+  user: {
+    id: string
+    name: string
+    display_name: string
+  }
+}
+
+// ---------------------------------------------------------------------------
 // App config models
 // ---------------------------------------------------------------------------
 
