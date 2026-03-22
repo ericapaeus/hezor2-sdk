@@ -14,7 +14,7 @@ import {
   ANONYMOUS_HEADER_PUBLIC_KEY,
   DEFAULT_API_BASE_URL,
   DEFAULT_API_KEY,
-} from '../src/index'
+} from '@hezor/hezor2-sdk'
 
 describe('hezor2-sdk exports', () => {
   it('should export VERSION', () => {

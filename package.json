@@ -1,6 +1,6 @@
 {
   "name": "@hezor/hezor2-sdk",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "description": "Hezor2 SDK — shared utilities for third-party integrations",
   "keywords": [
     "hezor",
@@ -23,12 +23,12 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
+      "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }
   },
   "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
     "dist"
@@ -46,8 +46,10 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "pnpm clean && pnpm build && pnpm typecheck",
-    "release": "pnpm publish --access public"
+    "prepublishOnly": "pnpm clean && pnpm typecheck && pnpm build && pnpm test",
+    "release:patch": "bash scripts/release.sh patch",
+    "release:minor": "bash scripts/release.sh minor",
+    "release:major": "bash scripts/release.sh major"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { Hezor2APIClient, DEFAULT_API_BASE_URL, DEFAULT_API_KEY } from '../src/index'
-import type { WebhookResponse } from '../src/index'
+import { Hezor2APIClient, DEFAULT_API_BASE_URL, DEFAULT_API_KEY } from '@hezor/hezor2-sdk'
+import type { WebhookResponse } from '@hezor/hezor2-sdk'
 
 describe('Hezor2APIClient', () => {
   let client: Hezor2APIClient

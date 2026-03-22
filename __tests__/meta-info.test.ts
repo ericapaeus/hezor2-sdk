@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { describe, it, expect, vi } from 'vitest'
-import { metaInfoToRequestHeader, REQ_HEADER_META_INFO_KEY } from '../src/index'
-import type { MetaInfoData } from '../src/index'
+import { metaInfoToRequestHeader, REQ_HEADER_META_INFO_KEY } from '@hezor/hezor2-sdk'
+import type { MetaInfoData } from '@hezor/hezor2-sdk'
 
 describe('metaInfoToRequestHeader', () => {
   const sampleMeta: MetaInfoData = {

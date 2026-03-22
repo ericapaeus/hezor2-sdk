@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { loadEnv } from '../src/index'
+import { loadEnv } from '@hezor/hezor2-sdk'
 
 describe('loadEnv', () => {
   it('should return default config when no env vars set', () => {

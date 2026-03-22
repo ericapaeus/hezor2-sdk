@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { mergedConfigs } from '../src/index'
-import type { PullConfigsResponse } from '../src/index'
+import { mergedConfigs } from '@hezor/hezor2-sdk'
+import type { PullConfigsResponse } from '@hezor/hezor2-sdk'
 
 describe('mergedConfigs', () => {
   it('should merge public and user configs with user taking priority', () => {

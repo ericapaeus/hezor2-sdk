@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { Hezor2SDK } from '../src/index'
-import type { WebhookResponse } from '../src/index'
+import { Hezor2SDK } from '@hezor/hezor2-sdk'
+import type { WebhookResponse } from '@hezor/hezor2-sdk'
 
 describe('Hezor2SDK', () => {
   it('should instantiate with defaults', () => {

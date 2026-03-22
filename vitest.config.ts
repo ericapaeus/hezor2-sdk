@@ -1,6 +1,12 @@
+import { resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@hezor/hezor2-sdk': resolve(__dirname, 'dist/index.js'),
+    },
+  },
   test: {
     globals: true,
     environment: 'node',

@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { BaseAPIClient } from '../src/index'
-import type { MetaInfoData } from '../src/index'
+import { BaseAPIClient } from '@hezor/hezor2-sdk'
+import type { MetaInfoData } from '@hezor/hezor2-sdk'
 
 describe('BaseAPIClient', () => {
   it('should build correct base URL (strip trailing slashes)', () => {
