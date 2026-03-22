@@ -1,0 +1,12 @@
+# Exclude everything by default, only publish what's in `files` field of package.json
+node_modules/
+src/
+coverage/
+*.test.ts
+*.spec.ts
+tsup.config.ts
+vitest.config.ts
+eslint.config.mjs
+.prettierrc
+tsconfig.json
+.gitignore
