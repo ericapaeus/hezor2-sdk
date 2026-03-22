@@ -19,7 +19,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
 
@@ -31,4 +31,4 @@ jobs:
 
       - run: pnpm test
 
-      - run: pnpm publish --access public --no-git-checks
+      - run: npm publish --access public
