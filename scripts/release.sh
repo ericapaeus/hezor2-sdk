@@ -11,9 +11,10 @@ set -euo pipefail
 # ──────────────────────────────────────────────────────────
 
 BUMP="${1:-patch}"
+MSG="${2:-}"
 
 if [[ "$BUMP" != "patch" && "$BUMP" != "minor" && "$BUMP" != "major" ]]; then
-  echo "Usage: $0 <patch|minor|major>"
+  echo "Usage: $0 <patch|minor|major> [commit message]"
   exit 1
 fi
 
@@ -21,8 +22,13 @@ fi
 if [[ -n "$(git status --porcelain)" ]]; then
   echo "▸ Committing changes…"
   git add -A
-  read -r -p "  Commit message: " MSG
-  git commit -m "${MSG:-chore: update}"
+  if [[ -z "$MSG" ]]; then
+    if [[ -t 0 ]]; then
+      read -r -p "  Commit message: " MSG
+    fi
+    MSG="${MSG:-chore: update}"
+  fi
+  git commit -m "$MSG"
 fi
 
 echo "▸ Type checking…"
