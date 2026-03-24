@@ -251,6 +251,80 @@ export interface KnowledgeSearchResult {
 }
 
 // ---------------------------------------------------------------------------
+// Graph query models
+// ---------------------------------------------------------------------------
+
+export interface GraphNode {
+  id: string
+  labels: string[]
+  name: string
+  entityType: string
+  description: string
+  properties: Record<string, unknown>
+}
+
+export interface GraphEdge {
+  id: string
+  sourceId: string
+  targetId: string
+  sourceName: string
+  targetName: string
+  relationshipType: string
+  weight: number
+  description: string
+  properties: Record<string, unknown>
+}
+
+export interface SubGraph {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+  centerNodeId: string
+}
+
+export interface GraphPath {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+  length: number
+}
+
+export interface PathResult {
+  sourceName: string
+  targetName: string
+  paths: GraphPath[]
+}
+
+export interface GraphStatistics {
+  entityCount: number
+  communityCount: number
+  relationshipCount: number
+  entityTypeDistribution: Record<string, number>
+  relationshipTypeDistribution: Record<string, number>
+  communityLevelDistribution: Record<string, number>
+  avgRelationshipsPerEntity: number
+}
+
+export interface CoOccurrence {
+  entityName: string
+  entityType: string
+  coOccurrenceCount: number
+  sharedRelationshipTypes: string[]
+}
+
+export interface CoOccurrenceList {
+  centerEntity: string
+  items: CoOccurrence[]
+}
+
+export interface GraphQueryResult {
+  queryType: string
+  statistics: GraphStatistics | null
+  nodes: GraphNode[] | null
+  subgraph: SubGraph | null
+  pathResult: PathResult | null
+  coOccurrences: CoOccurrenceList | null
+}
+
+// ---------------------------------------------------------------------------
 // Data retrieval models
 // ---------------------------------------------------------------------------
 

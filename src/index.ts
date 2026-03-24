@@ -52,6 +52,16 @@ export type {
   ReportMetadata,
   // Knowledge retrieval
   KnowledgeSearchResult,
+  // Graph query
+  GraphQueryResult,
+  GraphNode,
+  GraphEdge,
+  SubGraph,
+  GraphPath,
+  PathResult,
+  GraphStatistics,
+  CoOccurrence,
+  CoOccurrenceList,
   Chunk,
   OntologyEntity,
   Community,

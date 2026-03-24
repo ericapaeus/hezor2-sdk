@@ -14,6 +14,7 @@ import type {
   CreationGenerateResultV2,
   DataRetrieveResult,
   GenerateReportIdResponseData,
+  GraphQueryResult,
   KnowledgeSearchResult,
   PublishCreationResponseData,
   PullConfigsResponse,
@@ -166,6 +167,92 @@ export class Hezor2APIClient extends BaseAPIClient {
     }
     const resp = await this.webhookRequest<DataRetrieveResult>(
       'data_retrieve',
+      payload,
+    )
+    return resp.data!
+  }
+
+  /**
+   * Execute single-collection knowledge search.
+   *
+   * Targets a specific collection (chunks, entities, communities, pictures,
+   * relationships) with collection-specific filter parameters.
+   */
+  async knowledgeSearch(
+    query: string,
+    collection: string,
+    options?: {
+      topK?: number
+      scoreThreshold?: number
+      metadataFilter?: Record<string, unknown>
+      dateRange?: [string, string]
+      searchMode?: 'semantic' | 'hybrid'
+      vectorWeight?: number
+      textWeight?: number
+      entityType?: string
+      docId?: string
+    },
+  ): Promise<KnowledgeSearchResult> {
+    const payload: Record<string, unknown> = {
+      query,
+      collection,
+      top_k: options?.topK ?? 5,
+      score_threshold: options?.scoreThreshold ?? 0.5,
+      search_mode: options?.searchMode ?? 'semantic',
+      vector_weight: options?.vectorWeight ?? 0.7,
+      text_weight: options?.textWeight ?? 0.3,
+    }
+    if (options?.metadataFilter != null) payload['metadata_filter'] = options.metadataFilter
+    if (options?.dateRange != null) payload['date_range'] = options.dateRange
+    if (options?.entityType != null) payload['entity_type'] = options.entityType
+    if (options?.docId != null) payload['doc_id'] = options.docId
+
+    const resp = await this.webhookRequest<KnowledgeSearchResult>(
+      'knowledge_search',
+      payload,
+    )
+    return resp.data!
+  }
+
+  /**
+   * Execute knowledge graph topology query.
+   *
+   * Supports multiple query types: graph_statistics, entity_search,
+   * entity_relationships, entity_subgraph, find_paths,
+   * entity_co_occurrence, entity_communities, community_subgraph,
+   * related_communities.
+   */
+  async knowledgeGraphQuery(
+    queryType: string,
+    options?: {
+      keyword?: string
+      entityName?: string
+      entityType?: string
+      relationshipType?: string
+      direction?: 'in' | 'out' | 'both'
+      targetName?: string
+      maxDepth?: number
+      maxPaths?: number
+      communityId?: string
+      limit?: number
+    },
+  ): Promise<GraphQueryResult> {
+    const payload: Record<string, unknown> = {
+      query_type: queryType,
+      direction: options?.direction ?? 'both',
+      max_depth: options?.maxDepth ?? 2,
+      max_paths: options?.maxPaths ?? 3,
+      limit: options?.limit ?? 20,
+    }
+    if (options?.keyword != null) payload['keyword'] = options.keyword
+    if (options?.entityName != null) payload['entity_name'] = options.entityName
+    if (options?.entityType != null) payload['entity_type'] = options.entityType
+    if (options?.relationshipType != null) payload['relationship_type'] = options.relationshipType
+    if (options?.targetName != null) payload['target_name'] = options.targetName
+    if (options?.communityId != null) payload['community_id'] = options.communityId
+
+    const resp = await this.webhookRequest<GraphQueryResult>(
+      'knowledge_graph_query',
       payload,
     )
     return resp.data!

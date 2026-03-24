@@ -346,6 +346,243 @@ describe('Hezor2APIClient', () => {
 
   // --- pullConfigs ---
 
+  // --- knowledgeSearch ---
+
+  it('should call knowledge_search with required and default params', async () => {
+    const mockResponse: WebhookResponse = {
+      action: 'knowledge_search',
+      status: 'ok',
+      data: {
+        chunks: { items: [], collection: 'chunks', query: 'test', total: 0 },
+        entities: { items: [], collection: '', query: 'test', total: 0 },
+        communities: { items: [], collection: '', query: 'test', total: 0 },
+        pictures: { items: [], collection: '', query: 'test', total: 0 },
+        query: 'test',
+      },
+      message: '',
+    }
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    const result = await client.knowledgeSearch('test', 'chunks')
+    expect(result.query).toBe('test')
+
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(body.action).toBe('knowledge_search')
+    expect(body.payload.query).toBe('test')
+    expect(body.payload.collection).toBe('chunks')
+    expect(body.payload.top_k).toBe(5)
+    expect(body.payload.score_threshold).toBe(0.5)
+    expect(body.payload.search_mode).toBe('semantic')
+    expect(body.payload.vector_weight).toBe(0.7)
+    expect(body.payload.text_weight).toBe(0.3)
+  })
+
+  it('should call knowledge_search with all options', async () => {
+    const mockResponse: WebhookResponse = {
+      action: 'knowledge_search',
+      status: 'ok',
+      data: {
+        chunks: { items: [], collection: 'chunks', query: 'q', total: 0 },
+        entities: { items: [], collection: '', query: 'q', total: 0 },
+        communities: { items: [], collection: '', query: 'q', total: 0 },
+        pictures: { items: [], collection: '', query: 'q', total: 0 },
+        query: 'q',
+      },
+      message: '',
+    }
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    await client.knowledgeSearch('q', 'entities', {
+      topK: 10,
+      scoreThreshold: 0.8,
+      metadataFilter: { status: 'active' },
+      dateRange: ['2026-01-01', '2026-03-01'],
+      searchMode: 'hybrid',
+      vectorWeight: 0.6,
+      textWeight: 0.4,
+      entityType: 'Person',
+      docId: 'doc_123',
+    })
+
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(body.payload.top_k).toBe(10)
+    expect(body.payload.score_threshold).toBe(0.8)
+    expect(body.payload.metadata_filter).toEqual({ status: 'active' })
+    expect(body.payload.date_range).toEqual(['2026-01-01', '2026-03-01'])
+    expect(body.payload.search_mode).toBe('hybrid')
+    expect(body.payload.vector_weight).toBe(0.6)
+    expect(body.payload.text_weight).toBe(0.4)
+    expect(body.payload.entity_type).toBe('Person')
+    expect(body.payload.doc_id).toBe('doc_123')
+  })
+
+  it('should omit optional null params from knowledge_search payload', async () => {
+    const mockResponse: WebhookResponse = {
+      action: 'knowledge_search',
+      status: 'ok',
+      data: {
+        chunks: { items: [], collection: '', query: 'q', total: 0 },
+        entities: { items: [], collection: '', query: 'q', total: 0 },
+        communities: { items: [], collection: '', query: 'q', total: 0 },
+        pictures: { items: [], collection: '', query: 'q', total: 0 },
+        query: 'q',
+      },
+      message: '',
+    }
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    await client.knowledgeSearch('q', 'chunks')
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(body.payload).not.toHaveProperty('metadata_filter')
+    expect(body.payload).not.toHaveProperty('date_range')
+    expect(body.payload).not.toHaveProperty('entity_type')
+    expect(body.payload).not.toHaveProperty('doc_id')
+  })
+
+  // --- knowledgeGraphQuery ---
+
+  it('should call knowledge_graph_query for graph_statistics', async () => {
+    const mockResponse: WebhookResponse = {
+      action: 'knowledge_graph_query',
+      status: 'ok',
+      data: {
+        queryType: 'graph_statistics',
+        statistics: {
+          entityCount: 100,
+          communityCount: 10,
+          relationshipCount: 200,
+          entityTypeDistribution: {},
+          relationshipTypeDistribution: {},
+          communityLevelDistribution: {},
+          avgRelationshipsPerEntity: 2.0,
+        },
+        nodes: null,
+        subgraph: null,
+        pathResult: null,
+        coOccurrences: null,
+      },
+      message: '',
+    }
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    const result = await client.knowledgeGraphQuery('graph_statistics')
+    expect(result.queryType).toBe('graph_statistics')
+    expect(result.statistics?.entityCount).toBe(100)
+
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(body.action).toBe('knowledge_graph_query')
+    expect(body.payload.query_type).toBe('graph_statistics')
+    expect(body.payload.direction).toBe('both')
+    expect(body.payload.max_depth).toBe(2)
+    expect(body.payload.max_paths).toBe(3)
+    expect(body.payload.limit).toBe(20)
+  })
+
+  it('should call knowledge_graph_query for entity_search with options', async () => {
+    const mockResponse: WebhookResponse = {
+      action: 'knowledge_graph_query',
+      status: 'ok',
+      data: {
+        queryType: 'entity_search',
+        statistics: null,
+        nodes: [{ id: '1', labels: ['Entity'], name: 'Test', entityType: 'Person', description: '', properties: {} }],
+        subgraph: null,
+        pathResult: null,
+        coOccurrences: null,
+      },
+      message: '',
+    }
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    const result = await client.knowledgeGraphQuery('entity_search', {
+      keyword: 'test',
+      entityType: 'Person',
+      limit: 10,
+    })
+    expect(result.nodes).toHaveLength(1)
+    expect(result.nodes![0]!.name).toBe('Test')
+
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(body.payload.keyword).toBe('test')
+    expect(body.payload.entity_type).toBe('Person')
+    expect(body.payload.limit).toBe(10)
+  })
+
+  it('should call knowledge_graph_query for find_paths', async () => {
+    const mockResponse: WebhookResponse = {
+      action: 'knowledge_graph_query',
+      status: 'ok',
+      data: {
+        queryType: 'find_paths',
+        statistics: null,
+        nodes: null,
+        subgraph: null,
+        pathResult: {
+          sourceName: 'A',
+          targetName: 'B',
+          paths: [],
+        },
+        coOccurrences: null,
+      },
+      message: '',
+    }
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    const result = await client.knowledgeGraphQuery('find_paths', {
+      entityName: 'A',
+      targetName: 'B',
+      maxDepth: 5,
+      maxPaths: 10,
+    })
+    expect(result.pathResult?.sourceName).toBe('A')
+
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(body.payload.entity_name).toBe('A')
+    expect(body.payload.target_name).toBe('B')
+    expect(body.payload.max_depth).toBe(5)
+    expect(body.payload.max_paths).toBe(10)
+  })
+
+  it('should omit optional null params from knowledge_graph_query payload', async () => {
+    const mockResponse: WebhookResponse = {
+      action: 'knowledge_graph_query',
+      status: 'ok',
+      data: {
+        queryType: 'graph_statistics',
+        statistics: null,
+        nodes: null,
+        subgraph: null,
+        pathResult: null,
+        coOccurrences: null,
+      },
+      message: '',
+    }
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    await client.knowledgeGraphQuery('graph_statistics')
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(body.payload).not.toHaveProperty('keyword')
+    expect(body.payload).not.toHaveProperty('entity_name')
+    expect(body.payload).not.toHaveProperty('entity_type')
+    expect(body.payload).not.toHaveProperty('relationship_type')
+    expect(body.payload).not.toHaveProperty('target_name')
+    expect(body.payload).not.toHaveProperty('community_id')
+  })
+
   it('should call pull_configs', async () => {
     const mockResponse: WebhookResponse = {
       action: 'pull_configs',
