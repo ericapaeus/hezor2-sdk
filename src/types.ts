@@ -64,8 +64,13 @@ export interface ReportMetadata {
 /**
  * Simplified creation result (V2 — flat structure).
  * Recommended for new code.
+ *
+ * Key fields:
+ * - `creation_id`: 报告实例 ID，格式为 `rpt_xxxxxxxx`，通过 `generateReportId()` 生成
+ * - `slug`: 创作类型标识，如 `'universal_report'`（综合报告）
  */
 export interface CreationGenerateResultV2 {
+  /** 报告实例 ID，格式 `rpt_xxxxxxxx`，由 `generateReportId()` 生成。 */
   creation_id: string
   title: string
   full_content: string
@@ -80,6 +85,7 @@ export interface CreationGenerateResultV2 {
   contributors?: string[]
   domain?: string | null
   path?: string | null
+  /** 创作类型标识，如 `'universal_report'`。 */
   slug: string
   chapter_count?: number
   original_query?: string
