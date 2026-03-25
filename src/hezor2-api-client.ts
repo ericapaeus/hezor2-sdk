@@ -26,8 +26,7 @@ import type {
   WechatPollOpenidResponse,
 } from './types.js'
 
-export interface Hezor2APIClientOptions
-  extends Omit<BaseAPIClientOptions, 'baseUrl'> {
+export interface Hezor2APIClientOptions extends Omit<BaseAPIClientOptions, 'baseUrl'> {
   baseUrl?: string | undefined
 }
 
@@ -52,26 +51,21 @@ export class Hezor2APIClient extends BaseAPIClient {
 
     const response = await this.post('/webhook/', { json: body })
     if (!response.ok) {
-      throw new Error(
-        `Webhook HTTP error: ${response.status} ${response.statusText}`,
-      )
+      throw new Error(`Webhook HTTP error: ${response.status} ${response.statusText}`)
     }
 
     const resp = (await response.json()) as WebhookResponse<T>
     if (resp.status === 'error') {
-      throw new Error(
-        `Webhook action '${action}' failed: ${resp.message || 'unknown error'}`,
-      )
+      throw new Error(`Webhook action '${action}' failed: ${resp.message || 'unknown error'}`)
     }
     return resp
   }
 
   /** Generate unique report IDs with `rpt_` prefix. */
   async generateReportId(count: number = 1): Promise<string[]> {
-    const resp = await this.webhookRequest<GenerateReportIdResponseData>(
-      'generate_report_id',
-      { count },
-    )
+    const resp = await this.webhookRequest<GenerateReportIdResponseData>('generate_report_id', {
+      count,
+    })
     return resp.data!.report_ids
   }
 
@@ -85,33 +79,24 @@ export class Hezor2APIClient extends BaseAPIClient {
     options?: { taskId?: string; executionId?: string },
   ): Promise<PublishCreationResponseData> {
     const isV2 = 'slug' in payload && !('creation' in payload)
-    const action = isV2
-      ? 'publish_creation_report_v2'
-      : 'publish_creation_report'
+    const action = isV2 ? 'publish_creation_report_v2' : 'publish_creation_report'
 
     const webhookPayload: Record<string, unknown> = {
       creation_result: payload,
     }
     if (options?.taskId != null) webhookPayload['task_id'] = options.taskId
-    if (options?.executionId != null)
-      webhookPayload['execution_id'] = options.executionId
+    if (options?.executionId != null) webhookPayload['execution_id'] = options.executionId
 
-    const resp = await this.webhookRequest<PublishCreationResponseData>(
-      action,
-      webhookPayload,
-    )
+    const resp = await this.webhookRequest<PublishCreationResponseData>(action, webhookPayload)
     return resp.data!
   }
 
   /** Query report status and metadata. */
-  async getReportStatus(
-    creationId: string,
-    reportId: string,
-  ): Promise<ReportMetadata> {
-    const resp = await this.webhookRequest<ReportMetadata>(
-      'get_report_status',
-      { creation_id: creationId, report_id: reportId },
-    )
+  async getReportStatus(creationId: string, reportId: string): Promise<ReportMetadata> {
+    const resp = await this.webhookRequest<ReportMetadata>('get_report_status', {
+      creation_id: creationId,
+      report_id: reportId,
+    })
     return resp.data!
   }
 
@@ -132,10 +117,7 @@ export class Hezor2APIClient extends BaseAPIClient {
     }
     if (options?.creationId != null) payload['creation_id'] = options.creationId
 
-    const resp = await this.webhookRequest<PublicReportsResponseData>(
-      'get_public_reports',
-      payload,
-    )
+    const resp = await this.webhookRequest<PublicReportsResponseData>('get_public_reports', payload)
     return resp.data!
   }
 
@@ -143,9 +125,7 @@ export class Hezor2APIClient extends BaseAPIClient {
   async healthCheck(): Promise<[boolean, Record<string, unknown>]> {
     const response = await this.get('/health')
     if (!response.ok) {
-      throw new Error(
-        `Health check HTTP error: ${response.status} ${response.statusText}`,
-      )
+      throw new Error(`Health check HTTP error: ${response.status} ${response.statusText}`)
     }
 
     const data = (await response.json()) as Record<string, unknown>
@@ -159,9 +139,7 @@ export class Hezor2APIClient extends BaseAPIClient {
       params: { action },
     })
     if (!response.ok) {
-      throw new Error(
-        `Webhook help HTTP error: ${response.status} ${response.statusText}`,
-      )
+      throw new Error(`Webhook help HTTP error: ${response.status} ${response.statusText}`)
     }
     return (await response.json()) as WebhookActionHelp
   }
@@ -176,26 +154,17 @@ export class Hezor2APIClient extends BaseAPIClient {
       top_k: options?.topK ?? 3,
       score_threshold: options?.scoreThreshold ?? 0.5,
     }
-    const resp = await this.webhookRequest<KnowledgeSearchResult>(
-      'knowledge_retrieve',
-      payload,
-    )
+    const resp = await this.webhookRequest<KnowledgeSearchResult>('knowledge_retrieve', payload)
     return resp.data!
   }
 
   /** Execute data_retrieve webhook. */
-  async dataRetrieve(
-    query: string,
-    options?: { topK?: number },
-  ): Promise<DataRetrieveResult> {
+  async dataRetrieve(query: string, options?: { topK?: number }): Promise<DataRetrieveResult> {
     const payload: Record<string, unknown> = {
       query,
       top_k: options?.topK ?? 1,
     }
-    const resp = await this.webhookRequest<DataRetrieveResult>(
-      'data_retrieve',
-      payload,
-    )
+    const resp = await this.webhookRequest<DataRetrieveResult>('data_retrieve', payload)
     return resp.data!
   }
 
@@ -234,10 +203,7 @@ export class Hezor2APIClient extends BaseAPIClient {
     if (options?.entityType != null) payload['entity_type'] = options.entityType
     if (options?.docId != null) payload['doc_id'] = options.docId
 
-    const resp = await this.webhookRequest<KnowledgeSearchResult>(
-      'knowledge_search',
-      payload,
-    )
+    const resp = await this.webhookRequest<KnowledgeSearchResult>('knowledge_search', payload)
     return resp.data!
   }
 
@@ -278,10 +244,7 @@ export class Hezor2APIClient extends BaseAPIClient {
     if (options?.targetName != null) payload['target_name'] = options.targetName
     if (options?.communityId != null) payload['community_id'] = options.communityId
 
-    const resp = await this.webhookRequest<GraphQueryResult>(
-      'knowledge_graph_query',
-      payload,
-    )
+    const resp = await this.webhookRequest<GraphQueryResult>('knowledge_graph_query', payload)
     return resp.data!
   }
 
@@ -298,10 +261,7 @@ export class Hezor2APIClient extends BaseAPIClient {
       }
     }
 
-    const resp = await this.webhookRequest<PullConfigsResponse>(
-      'pull_configs',
-      webhookPayload,
-    )
+    const resp = await this.webhookRequest<PullConfigsResponse>('pull_configs', webhookPayload)
     return resp.data!
   }
 

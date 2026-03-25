@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs'
 
 export interface Ed25519KeyPair {
   privateKey: string // PEM-encoded PKCS#8
-  publicKey: string  // PEM-encoded SPKI
+  publicKey: string // PEM-encoded SPKI
 }
 
 /**
@@ -121,11 +121,7 @@ export function verifyJsonSignature(
 
 // ─── PEM Convenience Variants ───────────────────────────────────────────────
 
-export function signMessageWithPem(
-  privatePem: string,
-  message: Buffer,
-  password?: string,
-): Buffer {
+export function signMessageWithPem(privatePem: string, message: Buffer, password?: string): Buffer {
   const pem = deserializePrivateKey(privatePem, password)
   return signMessage(pem, message)
 }

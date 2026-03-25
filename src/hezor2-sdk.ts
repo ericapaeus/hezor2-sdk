@@ -74,10 +74,7 @@ export class Hezor2SDK {
    * })
    * ```
    */
-  static async with<T>(
-    options: Hezor2SDKOptions,
-    fn: (sdk: Hezor2SDK) => Promise<T>,
-  ): Promise<T> {
+  static async with<T>(options: Hezor2SDKOptions, fn: (sdk: Hezor2SDK) => Promise<T>): Promise<T> {
     const sdk = new Hezor2SDK(options)
     return fn(sdk)
   }
@@ -104,10 +101,7 @@ export class Hezor2SDK {
   }
 
   /** Query report status and metadata. */
-  async getReportStatus(
-    creationId: string,
-    reportId: string,
-  ): Promise<ReportMetadata> {
+  async getReportStatus(creationId: string, reportId: string): Promise<ReportMetadata> {
     return this.client.getReportStatus(creationId, reportId)
   }
 
@@ -152,10 +146,7 @@ export class Hezor2SDK {
   }
 
   /** Execute data retrieval. */
-  async dataRetrieve(
-    query: string,
-    options?: { topK?: number },
-  ): Promise<DataRetrieveResult> {
+  async dataRetrieve(query: string, options?: { topK?: number }): Promise<DataRetrieveResult> {
     return this.client.dataRetrieve(query, options)
   }
 
