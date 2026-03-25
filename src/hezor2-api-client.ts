@@ -22,6 +22,8 @@ import type {
   ReportMetadata,
   WebhookActionHelp,
   WebhookResponse,
+  WechatLoginUrlResponse,
+  WechatPollOpenidResponse,
 } from './types.js'
 
 export interface Hezor2APIClientOptions
@@ -301,6 +303,63 @@ export class Hezor2APIClient extends BaseAPIClient {
       webhookPayload,
     )
     return resp.data!
+  }
+
+  // ── WeChat anonymous OAuth ────────────────────────────────────────────────
+
+  /**
+   * Get WeChat OAuth login QR code URL.
+   *
+   * Calls `POST /auth/wechat/login-url`. Returns a QR code URL and a key
+   * for subsequent polling. No authentication required.
+   *
+   * @param redirect - Redirect URL after WeChat OAuth login completes (optional)
+   * @param options.timeout - Per-request timeout in ms (default: 15 000)
+   */
+  async wechatLoginUrl(
+    redirect: string = '',
+    options?: { timeout?: number },
+  ): Promise<WechatLoginUrlResponse> {
+    const response = await this.post('/auth/wechat/login-url', {
+      json: { redirect },
+      skipAuth: true,
+      timeout: options?.timeout ?? 15_000,
+    })
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(`wechatLoginUrl failed: ${response.status} ${text}`)
+    }
+    const json = (await response.json()) as Record<string, unknown>
+    const data = (json['data'] ?? json) as WechatLoginUrlResponse
+    return data
+  }
+
+  /**
+   * Poll WeChat scan status and retrieve OpenID.
+   *
+   * Calls `GET /auth/wechat/poll-openid`. Each call queries the WeChat auth
+   * server at most once. The client should call repeatedly until `status`
+   * is `"success"` (with `openid`) or `"expired"` / `"error"`.
+   *
+   * No authentication required.
+   *
+   * @param key - The key obtained from `wechatLoginUrl()`
+   * @param options.timeout - Per-request timeout in ms (default: 15 000)
+   */
+  async wechatPollOpenid(
+    key: string,
+    options?: { timeout?: number },
+  ): Promise<WechatPollOpenidResponse> {
+    const response = await this.get('/auth/wechat/poll-openid', {
+      params: { key },
+      skipAuth: true,
+      timeout: options?.timeout ?? 15_000,
+    })
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(`wechatPollOpenid failed: ${response.status} ${text}`)
+    }
+    return (await response.json()) as WechatPollOpenidResponse
   }
 
   // ── Connect login ─────────────────────────────────────────────────────────

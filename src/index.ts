@@ -87,4 +87,7 @@ export type {
   ConnectVerifyResponse,
   ConnectRefreshRequest,
   ConnectRefreshResponse,
+  // WeChat
+  WechatLoginUrlResponse,
+  WechatPollOpenidResponse,
 } from './types.js'

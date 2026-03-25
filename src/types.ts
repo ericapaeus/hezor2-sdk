@@ -389,6 +389,21 @@ export interface ConnectRefreshResponse {
 }
 
 // ---------------------------------------------------------------------------
+// WeChat anonymous OAuth models
+// ---------------------------------------------------------------------------
+
+export interface WechatLoginUrlResponse {
+  url: string
+  key: string
+}
+
+export interface WechatPollOpenidResponse {
+  status: string
+  openid?: string
+  message?: string
+}
+
+// ---------------------------------------------------------------------------
 // App config models
 // ---------------------------------------------------------------------------
 

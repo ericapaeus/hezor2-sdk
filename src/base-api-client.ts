@@ -120,6 +120,8 @@ export class BaseAPIClient {
       params?: Record<string, string>
       headers?: Record<string, string>
       skipAuth?: boolean
+      /** Per-request timeout in ms. Falls back to the client-level timeout. */
+      timeout?: number
     },
   ): Promise<Response> {
     const headers = await this.buildRequestHeaders(options)
@@ -133,7 +135,7 @@ export class BaseAPIClient {
     return fetch(url, {
       method: 'GET',
       headers,
-      signal: AbortSignal.timeout(this.timeout),
+      signal: AbortSignal.timeout(options?.timeout ?? this.timeout),
     })
   }
 
@@ -144,6 +146,8 @@ export class BaseAPIClient {
       json?: unknown
       headers?: Record<string, string>
       skipAuth?: boolean
+      /** Per-request timeout in ms. Falls back to the client-level timeout. */
+      timeout?: number
     },
   ): Promise<Response> {
     const headers = await this.buildRequestHeaders(options)
@@ -151,7 +155,7 @@ export class BaseAPIClient {
     const init: RequestInit = {
       method: 'POST',
       headers,
-      signal: AbortSignal.timeout(this.timeout),
+      signal: AbortSignal.timeout(options?.timeout ?? this.timeout),
     }
     if (options?.json != null) init.body = JSON.stringify(options.json)
 
