@@ -59,6 +59,7 @@ export interface ReportMetadata {
   verificationCode: string
   statusMessage: string
   summary: string
+  reportUrl: string
 }
 
 /**
