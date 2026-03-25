@@ -19,6 +19,7 @@ import type {
   DataRetrieveResult,
   GraphQueryResult,
   KnowledgeSearchResult,
+  PublicReportsResponseData,
   PublishCreationResponseData,
   PullConfigsResponse,
   ReportMetadata,
@@ -108,6 +109,21 @@ export class Hezor2SDK {
     reportId: string,
   ): Promise<ReportMetadata> {
     return this.client.getReportStatus(creationId, reportId)
+  }
+
+  /**
+   * Get public reports.
+   *
+   * This action supports anonymous access (no API key required).
+   *
+   * @param options.topN - Max number of reports to return (default: 5)
+   * @param options.creationId - Filter by specific creation ID (optional)
+   */
+  async getPublicReports(options?: {
+    topN?: number
+    creationId?: string
+  }): Promise<PublicReportsResponseData> {
+    return this.client.getPublicReports(options)
   }
 
   /**

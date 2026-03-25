@@ -16,6 +16,7 @@ import type {
   GenerateReportIdResponseData,
   GraphQueryResult,
   KnowledgeSearchResult,
+  PublicReportsResponseData,
   PublishCreationResponseData,
   PullConfigsResponse,
   ReportMetadata,
@@ -108,6 +109,30 @@ export class Hezor2APIClient extends BaseAPIClient {
     const resp = await this.webhookRequest<ReportMetadata>(
       'get_report_status',
       { creation_id: creationId, report_id: reportId },
+    )
+    return resp.data!
+  }
+
+  /**
+   * Get public reports.
+   *
+   * This action supports anonymous access (no API key required).
+   *
+   * @param options.topN - Max number of reports to return (default: 5)
+   * @param options.creationId - Filter by specific creation ID (optional)
+   */
+  async getPublicReports(options?: {
+    topN?: number
+    creationId?: string
+  }): Promise<PublicReportsResponseData> {
+    const payload: Record<string, unknown> = {
+      top_n: options?.topN ?? 5,
+    }
+    if (options?.creationId != null) payload['creation_id'] = options.creationId
+
+    const resp = await this.webhookRequest<PublicReportsResponseData>(
+      'get_public_reports',
+      payload,
     )
     return resp.data!
   }

@@ -62,6 +62,11 @@ export interface ReportMetadata {
   reportUrl: string
 }
 
+export interface PublicReportsResponseData {
+  items: ReportMetadata[]
+  total: number
+}
+
 /**
  * Simplified creation result (V2 — flat structure).
  * Recommended for new code.

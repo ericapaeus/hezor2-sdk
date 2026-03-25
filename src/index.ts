@@ -50,6 +50,8 @@ export type {
   GenerateReportIdResponseData,
   PublishCreationResponseData,
   ReportMetadata,
+  // Public reports
+  PublicReportsResponseData,
   // Knowledge retrieval
   KnowledgeSearchResult,
   // Graph query
