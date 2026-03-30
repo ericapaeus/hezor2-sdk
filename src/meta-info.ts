@@ -80,12 +80,15 @@ export async function metaInfoToRequestHeader(
 
   if (!privateKeyPem) {
     // Use anonymous key with warning
+    // eslint-disable-next-line no-console
     console.warn('*'.repeat(20))
+    // eslint-disable-next-line no-console
     console.warn(
       'privateKeyPem is not provided, using anonymous private key. ' +
         'The corresponding public key is:\n' +
         ANONYMOUS_HEADER_PUBLIC_KEY,
     )
+    // eslint-disable-next-line no-console
     console.warn('*'.repeat(20))
     privateKeyPem = ANONYMOUS_HEADER_PRIVATE_KEY
     password = ANONYMOUS_HEADER_PRIVATE_KEY_PASSWORD

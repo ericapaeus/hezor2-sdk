@@ -656,7 +656,7 @@ async function promptPassword(prompt: string): Promise<string> {
       process.stdin.setRawMode(true)
       let input = ''
 
-      const onData = (buf: Buffer) => {
+      const onData = (buf: Buffer): void => {
         const char = buf.toString('utf-8')
         if (char === '\n' || char === '\r' || char === '\u0004') {
           process.stdin.setRawMode(false)
