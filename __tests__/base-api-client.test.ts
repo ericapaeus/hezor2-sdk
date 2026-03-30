@@ -88,20 +88,20 @@ describe('BaseAPIClient', () => {
     expect(headers).not.toHaveProperty('Authorization')
   })
 
-  it('should not include X-APP-NAME if no appName', async () => {
+  it('should use default X-APP-NAME "public" if no appName', async () => {
     const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000' })
     const headers = await client.getHeaders()
-    expect(headers).not.toHaveProperty('X-APP-NAME')
+    expect(headers['X-APP-NAME']).toBe('public')
   })
 
-  it('should not include X-META-INFO if no metaInfo', async () => {
+  it('should include default X-META-INFO even if no metaInfo provided', async () => {
     const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000' })
     const headers = await client.getHeaders()
-    expect(headers).not.toHaveProperty('X-META-INFO')
+    expect(headers).toHaveProperty('X-META-INFO')
+    expect(headers['X-META-INFO']!.split('.')).toHaveLength(3)
   })
 
   it('should use anonymous key for metaInfo when no private key provided', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const client = new BaseAPIClient({
       baseUrl: 'http://localhost:8000',
       metaInfo: {
@@ -113,8 +113,6 @@ describe('BaseAPIClient', () => {
     const headers = await client.getHeaders()
     expect(headers).toHaveProperty('X-META-INFO')
     expect(headers['X-META-INFO']!.split('.')).toHaveLength(3)
-    expect(warnSpy).toHaveBeenCalled()
-    warnSpy.mockRestore()
   })
 
   it('should use privateKeyPem for metaInfo when provided', async () => {

@@ -1,0 +1,8 @@
+{
+    "name": "cli-demo",
+    "private": true,
+    "type": "module",
+    "dependencies": {
+        "@hezor/hezor2-sdk": "file:../../"
+    }
+}

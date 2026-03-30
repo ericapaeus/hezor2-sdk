@@ -32,6 +32,7 @@ export interface ProfileData {
   user_name: string
   display_name: string
   app_name: string | null
+  caller_id: string | null
   logged_in_at: string | null
   expires_at: string | null
 }

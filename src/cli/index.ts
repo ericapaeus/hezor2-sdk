@@ -6,7 +6,9 @@
  */
 
 import { Command } from 'commander'
+import { Hezor2APIClient } from '../hezor2-api-client.js'
 import { Hezor2SDK } from '../hezor2-sdk.js'
+import type { CreationGenerateResultV2 } from '../types.js'
 import { VERSION } from '../index.js'
 import { CredentialManager, type ProfileData } from './credential.js'
 
@@ -34,6 +36,9 @@ function createSDK(profile: ProfileData): Hezor2SDK {
     baseUrl: profile.base_url,
     apiKey: profile.api_key,
     appName: profile.app_name ?? undefined,
+    metaInfo: profile.caller_id
+      ? { subject: 'anonymous', subject_code: 'anonymous', caller_id: profile.caller_id }
+      : undefined,
   })
 }
 
@@ -45,7 +50,8 @@ function outputResult(data: unknown, raw: boolean): void {
 function buildBaseUrl(host: string): string {
   let h = host.replace(/\/+$/, '')
   if (!/^https?:\/\//.test(h)) {
-    h = `https://${h}`
+    const isLocal = /^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/.test(h)
+    h = `${isLocal ? 'http' : 'https'}://${h}`
   }
   return `${h}/api/v1`
 }
@@ -56,7 +62,8 @@ program
   .command('login <host>')
   .description('登录 Hezor2 平台')
   .option('-p, --profile <name>', 'Profile 名称', 'default')
-  .action(async (host: string, opts: { profile: string }) => {
+  .option('-a, --app-name <name>', '应用名称（用于证书解析，默认 public）')
+  .action(async (host: string, opts: { profile: string; appName?: string }) => {
     const baseUrl = buildBaseUrl(host)
 
     // Prompt for API key (hidden input)
@@ -113,7 +120,8 @@ program
         display_name: data.display_name,
         logged_in_at: new Date().toISOString(),
         expires_at: data.expires_at ?? null,
-        app_name: null,
+        app_name: opts.appName ?? null,
+        caller_id: null,
       }
 
       const cm = new CredentialManager()
@@ -133,37 +141,117 @@ program
     }
   })
 
+// ── Connect (anonymous WeChat) ───────────────────────────────────────────
+
+program
+  .command('connect <host>')
+  .description('匿名连接 — 通过微信扫码获取 caller_id')
+  .option('-p, --profile <name>', 'Profile 名称', 'default')
+  .action(async (host: string, opts: { profile: string }) => {
+    const baseUrl = buildBaseUrl(host)
+
+    // 无需认证的客户端
+    const client = new Hezor2APIClient({ baseUrl })
+
+    console.log(`连接到 ${baseUrl} ...`)
+
+    // 1. 获取微信扫码登录 URL
+    let url: string
+    let key: string
+    try {
+      const result = await client.wechatLoginUrl()
+      url = result.url
+      key = result.key
+    } catch (err) {
+      console.error(`✗ 获取微信二维码失败: ${err instanceof Error ? err.message : String(err)}`)
+      process.exit(1)
+    }
+
+    console.log('\n请在浏览器中打开以下链接扫码:')
+    console.log(`  ${url}\n`)
+    console.log('等待扫码...')
+
+    // 2. 轮询 openid（每 2 秒，最多 120 秒）
+    const maxAttempts = 60
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise((r) => setTimeout(r, 2000))
+
+      try {
+        const poll = await client.wechatPollOpenid(key)
+
+        if (poll.status === 'success' && poll.openid) {
+          const profileData: ProfileData = {
+            host: host.replace(/\/+$/, ''),
+            base_url: baseUrl,
+            api_key: '',
+            session_id: '',
+            user_id: '',
+            user_name: 'anonymous',
+            display_name: '匿名用户',
+            app_name: 'public',
+            caller_id: poll.openid,
+            logged_in_at: new Date().toISOString(),
+            expires_at: null,
+          }
+
+          const cm = new CredentialManager()
+          cm.saveProfile(opts.profile, profileData)
+
+          console.log('\n✓ 连接成功！')
+          console.log(`  caller_id: ${poll.openid}`)
+          console.log(`  Profile: ${opts.profile}`)
+          return
+        }
+
+        if (poll.status === 'expired') {
+          console.error('\n✗ 二维码已过期，请重新运行命令')
+          process.exit(1)
+        }
+      } catch {
+        // 网络波动时继续轮询
+      }
+
+      process.stdout.write('.')
+    }
+
+    console.error('\n✗ 等待超时，请重新运行命令')
+    process.exit(1)
+  })
+
 // ── Logout ───────────────────────────────────────────────────────────────
 
 program
   .command('logout')
   .description('登出 Hezor2 平台')
-  .option('-p, --profile <name>', 'Profile 名称', 'default')
-  .action(async (opts: { profile: string }) => {
+  .option('-p, --profile <name>', 'Profile 名称')
+  .action(async (opts: { profile?: string }) => {
     const cm = new CredentialManager()
-    const profile = cm.loadProfile(opts.profile)
+    const profileName = opts.profile ?? cm.getActiveProfileName()
+    const profile = cm.loadProfile(profileName)
 
     if (!profile) {
-      console.log(`! Profile '${opts.profile}' 不存在或未登录`)
+      console.log(`! Profile '${profileName}' 不存在或未登录`)
       return
     }
 
     // Server-side logout (best-effort)
-    try {
-      await fetch(`${profile.base_url}/auth/cli/logout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${profile.api_key}`,
-        },
-        body: JSON.stringify({ session_id: profile.session_id }),
-      })
-    } catch {
-      // Ignore server logout failures
+    if (profile.api_key) {
+      try {
+        await fetch(`${profile.base_url}/auth/cli/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${profile.api_key}`,
+          },
+          body: JSON.stringify({ session_id: profile.session_id }),
+        })
+      } catch {
+        // Ignore server logout failures
+      }
     }
 
-    cm.deleteProfile(opts.profile)
-    console.log(`✓ 已登出 (Profile: ${opts.profile})`)
+    cm.deleteProfile(profileName)
+    console.log(`✓ 已登出 (Profile: ${profileName})`)
   })
 
 // ── Status ───────────────────────────────────────────────────────────────
@@ -189,8 +277,10 @@ program
       const p = cm.loadProfile(name)
       if (!p) continue
       const marker = name === active ? '★' : ' '
+      const anonTag = p.caller_id ? '(匿名)' : ''
+      const display = `${p.display_name} ${anonTag}`.trim()
       console.log(
-        `${marker} ${name.padEnd(12)} ${p.display_name.padEnd(16)} ${p.host.padEnd(30)} ${p.logged_in_at ?? '-'}`,
+        `${marker} ${name.padEnd(12)} ${display.padEnd(16)} ${p.host.padEnd(30)} ${p.logged_in_at ?? '-'}`,
       )
     }
   })
@@ -204,6 +294,10 @@ sessions
   .description('列出服务端活跃会话')
   .action(async () => {
     const profile = getProfile()
+    if (!profile.api_key) {
+      console.error('✗ 匿名 Profile 无法管理会话。请使用 hezor2 login 登录。')
+      process.exit(1)
+    }
     const resp = await fetch(`${profile.base_url}/auth/cli/sessions`, {
       headers: { Authorization: `Bearer ${profile.api_key}` },
     })
@@ -231,6 +325,10 @@ sessions
   .description('撤销指定会话')
   .action(async (sessionId: string) => {
     const profile = getProfile()
+    if (!profile.api_key) {
+      console.error('✗ 匿名 Profile 无法管理会话。请使用 hezor2 login 登录。')
+      process.exit(1)
+    }
     const resp = await fetch(`${profile.base_url}/auth/cli/sessions/${sessionId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${profile.api_key}` },
@@ -332,10 +430,25 @@ reports
       process.exit(1)
     }
 
-    const data = JSON.parse(fs.readFileSync(resolved, 'utf-8'))
+    let data: Record<string, unknown>
+    try {
+      data = JSON.parse(fs.readFileSync(resolved, 'utf-8')) as Record<string, unknown>
+    } catch (err) {
+      console.error(`✗ JSON 解析失败: ${err instanceof Error ? err.message : String(err)}`)
+      process.exit(1)
+    }
+
+    // 基本结构验证
+    const requiredFields = ['creation_id', 'title', 'full_content', 'subject', 'slug']
+    const missingFields = requiredFields.filter((f) => !(f in data))
+    if (missingFields.length > 0) {
+      console.error(`✗ JSON 数据缺少必填字段: ${missingFields.join(', ')}`)
+      process.exit(1)
+    }
+
     const profile = getProfile()
     const sdk = createSDK(profile)
-    const result = await sdk.publishCreationReport(data, {
+    const result = await sdk.publishCreationReport(data as unknown as CreationGenerateResultV2, {
       ...(opts.taskId ? { taskId: opts.taskId } : {}),
       ...(opts.executionId ? { executionId: opts.executionId } : {}),
     })

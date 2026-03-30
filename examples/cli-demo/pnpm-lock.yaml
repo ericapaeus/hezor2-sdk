@@ -1,0 +1,45 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      '@hezor/hezor2-sdk':
+        specifier: file:../../
+        version: file:../..
+
+packages:
+
+  '@hezor/hezor2-sdk@file:../..':
+    resolution: {directory: ../.., type: directory}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+
+  commander@13.1.0:
+    resolution: {integrity: sha512-/rFeCpNJQbhSZjGVwO9RFV3xPqbnERS8MmIQzCtD/zl6gpJuV/bMLuN92oG3F7d8oDEHHRrujSXNUr8fpjntKw==}
+    engines: {node: '>=18'}
+
+  dotenv@17.3.1:
+    resolution: {integrity: sha512-IO8C/dzEb6O3F9/twg6ZLXz164a2fhTnEWb95H23Dm4OuN+92NmEAlTrupP9VW6Jm3sO26tQlqyvyi4CsnY9GA==}
+    engines: {node: '>=12'}
+
+  jose@6.2.2:
+    resolution: {integrity: sha512-d7kPDd34KO/YnzaDOlikGpOurfF0ByC2sEV4cANCtdqLlTfBlw2p14O/5d/zv40gJPbIQxfES3nSx1/oYNyuZQ==}
+
+snapshots:
+
+  '@hezor/hezor2-sdk@file:../..':
+    dependencies:
+      commander: 13.1.0
+      dotenv: 17.3.1
+      jose: 6.2.2
+
+  commander@13.1.0: {}
+
+  dotenv@17.3.1: {}
+
+  jose@6.2.2: {}

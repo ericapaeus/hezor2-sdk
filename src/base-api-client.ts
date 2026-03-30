@@ -7,11 +7,19 @@
 import {
   ANONYMOUS_HEADER_PRIVATE_KEY,
   ANONYMOUS_HEADER_PRIVATE_KEY_PASSWORD,
-  ANONYMOUS_HEADER_PUBLIC_KEY,
   REQ_HEADER_APP_NAME_KEY,
-  REQ_HEADER_META_INFO_KEY,
 } from './constants.js'
 import { type MetaInfoData, metaInfoToRequestHeader } from './meta-info.js'
+
+/** Default app name when none is provided (matches server DEFAULT_APP_NAME). */
+const DEFAULT_APP_NAME = 'public'
+
+/** Default anonymous MetaInfo used when no metaInfo is explicitly supplied. */
+const DEFAULT_META_INFO: MetaInfoData = {
+  subject: 'anonymous',
+  subject_code: 'anonymous',
+  caller_id: 'sdk',
+}
 
 export interface BaseAPIClientOptions {
   baseUrl: string
@@ -54,45 +62,37 @@ export class BaseAPIClient {
       'Content-Type': 'application/json',
     }
 
-    if (this.appName) {
-      headers[REQ_HEADER_APP_NAME_KEY] = this.appName
-    }
+    // Always send X-APP-NAME; fall back to "public" when not provided
+    headers[REQ_HEADER_APP_NAME_KEY] = this.appName ?? DEFAULT_APP_NAME
 
     if (this.apiKey) {
       headers['Authorization'] = `Bearer ${this.apiKey}`
     }
 
-    if (this.metaInfo) {
-      if (!this.privateKeyPem && !this.privateKeyPath) {
-        console.warn('*'.repeat(20))
-        console.warn(
-          'privateKeyPem is not provided, using anonymous private key. ' +
-            'The corresponding public key is:\n' +
-            ANONYMOUS_HEADER_PUBLIC_KEY,
-        )
-        console.warn('*'.repeat(20))
+    // Resolve effective metaInfo; use anonymous default when not provided
+    const effectiveMetaInfo: MetaInfoData = this.metaInfo ?? DEFAULT_META_INFO
 
-        const metaHeader = await metaInfoToRequestHeader(this.metaInfo, {
-          privateKeyPem: ANONYMOUS_HEADER_PRIVATE_KEY,
-          password: ANONYMOUS_HEADER_PRIVATE_KEY_PASSWORD,
-          expiresIn: this.metaInfoExpiresIn,
-        })
-        Object.assign(headers, metaHeader)
-      } else {
-        const opts: {
-          privateKeyPath?: string
-          privateKeyPem?: string
-          password?: string
-          expiresIn: number
-        } = {
-          expiresIn: this.metaInfoExpiresIn,
-        }
-        if (this.privateKeyPath != null) opts.privateKeyPath = this.privateKeyPath
-        if (this.privateKeyPem != null) opts.privateKeyPem = this.privateKeyPem
-        if (this.password != null) opts.password = this.password
-        const metaHeader = await metaInfoToRequestHeader(this.metaInfo, opts)
-        Object.assign(headers, metaHeader)
+    if (!this.privateKeyPem && !this.privateKeyPath) {
+      const metaHeader = await metaInfoToRequestHeader(effectiveMetaInfo, {
+        privateKeyPem: ANONYMOUS_HEADER_PRIVATE_KEY,
+        password: ANONYMOUS_HEADER_PRIVATE_KEY_PASSWORD,
+        expiresIn: this.metaInfoExpiresIn,
+      })
+      Object.assign(headers, metaHeader)
+    } else {
+      const opts: {
+        privateKeyPath?: string
+        privateKeyPem?: string
+        password?: string
+        expiresIn: number
+      } = {
+        expiresIn: this.metaInfoExpiresIn,
       }
+      if (this.privateKeyPath != null) opts.privateKeyPath = this.privateKeyPath
+      if (this.privateKeyPem != null) opts.privateKeyPem = this.privateKeyPem
+      if (this.password != null) opts.password = this.password
+      const metaHeader = await metaInfoToRequestHeader(effectiveMetaInfo, opts)
+      Object.assign(headers, metaHeader)
     }
 
     return headers
