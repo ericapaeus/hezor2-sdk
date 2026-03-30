@@ -33,6 +33,9 @@
   "files": [
     "dist"
   ],
+  "bin": {
+    "hezor2": "./dist/bin.js"
+  },
   "scripts": {
     "build": "tsup",
     "build:watch": "tsup --watch",
@@ -70,6 +73,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "commander": "^13.0.0",
     "dotenv": "^17.3.1",
     "jose": "^6.2.2"
   }
