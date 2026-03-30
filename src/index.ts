@@ -5,7 +5,11 @@
  * Ported from hezor_common.transfer.hezor2_sdk (Python).
  */
 
-export const VERSION = '0.1.0'
+import { createRequire } from 'node:module'
+const _require = createRequire(import.meta.url)
+const _pkg = _require('../package.json') as { version: string }
+
+export const VERSION: string = _pkg.version
 
 // --- Main SDK ---
 export { Hezor2SDK, type Hezor2SDKOptions } from './hezor2-sdk.js'

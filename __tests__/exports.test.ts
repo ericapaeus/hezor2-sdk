@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { createRequire } from 'node:module'
 import {
   VERSION,
   Hezor2SDK,
@@ -16,9 +17,12 @@ import {
   DEFAULT_API_KEY,
 } from '@hezor/hezor2-sdk'
 
+const _require = createRequire(import.meta.url)
+const pkg = _require('../package.json') as { version: string }
+
 describe('hezor2-sdk exports', () => {
-  it('should export VERSION', () => {
-    expect(VERSION).toBe('0.1.0')
+  it('should export VERSION matching package.json', () => {
+    expect(VERSION).toBe(pkg.version)
   })
 
   it('should export main SDK class', () => {

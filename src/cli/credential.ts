@@ -35,6 +35,9 @@ export interface ProfileData {
   caller_id: string | null
   logged_in_at: string | null
   expires_at: string | null
+  client_id: string | null
+  client_secret: string | null
+  cert_content: string | null
 }
 
 interface CredentialStore {

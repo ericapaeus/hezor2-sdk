@@ -25,7 +25,7 @@ function getProfile(profileName?: string): ProfileData {
   const cm = new CredentialManager()
   const profile = cm.loadProfile(profileName)
   if (!profile) {
-    console.error('✗ 未登录。请先运行 hezor2 login <host>')
+    console.error('✗ 未登录。请先运行 hezor2 login <host> 或使用 hezor2 connect <host> 进行连接')
     process.exit(1)
   }
   return profile
@@ -39,6 +39,8 @@ function createSDK(profile: ProfileData): Hezor2SDK {
     metaInfo: profile.caller_id
       ? { subject: 'anonymous', subject_code: 'anonymous', caller_id: profile.caller_id }
       : undefined,
+    privateKeyPem: profile.cert_content ?? undefined,
+    password: profile.client_secret ?? undefined,
   })
 }
 
@@ -122,6 +124,9 @@ program
         expires_at: data.expires_at ?? null,
         app_name: opts.appName ?? null,
         caller_id: null,
+        client_id: null,
+        client_secret: null,
+        cert_content: null,
       }
 
       const cm = new CredentialManager()
@@ -192,6 +197,9 @@ program
             caller_id: poll.openid,
             logged_in_at: new Date().toISOString(),
             expires_at: null,
+            client_id: null,
+            client_secret: null,
+            cert_content: null,
           }
 
           const cm = new CredentialManager()
@@ -619,24 +627,35 @@ const apps = program.command('apps').description('应用管理')
 
 apps
   .command('list')
-  .description('列出当前用户绑定的应用')
-  .option('--raw', '输出原始 JSON')
-  .action(async (opts: { raw?: boolean }) => {
-    const profile = getProfile()
-    const sdk = createSDK(profile)
-    const list = await sdk.getMyApps()
-    outputResult(list, opts.raw ?? false)
+  .description('列出当前用户绑定的应用（需要 JWT 认证）')
+  .action(async () => {
+    console.error('✗ apps list 需要 JWT 认证（Web 登录），CLI 暂不支持。')
+    console.error('  请向平台管理员获取您有权限的应用名称 (app_name)，然后运行：')
+    console.error('  hezor2 apps use <app_name>')
+    process.exit(1)
   })
 
 apps
-  .command('certs <appName>')
-  .description('获取应用证书信息')
-  .option('--raw', '输出原始 JSON')
-  .action(async (appName: string, opts: { raw?: boolean }) => {
-    const profile = getProfile()
+  .command('use <appName>')
+  .description('切换应用，获取证书并保存到凭据中')
+  .action(async (appName: string) => {
+    const cm = new CredentialManager()
+    const profileName = cm.getActiveProfileName()
+    const profile = getProfile(profileName)
     const sdk = createSDK(profile)
     const result = await sdk.getAppCerts(appName)
-    outputResult(result, opts.raw ?? false)
+
+    profile.app_name = result.app_name
+    profile.client_id = result.client_id
+    profile.client_secret = result.client_secret
+    profile.cert_content = result.cert_content
+    cm.saveProfile(profileName, profile)
+
+    console.log(`✓ 已切换到应用 ${appName}，证书已保存到 Profile [${profileName}]`)
+    console.log(`  app_name:      ${result.app_name}`)
+    console.log(`  client_id:     ${result.client_id}`)
+    console.log(`  client_secret: ${result.client_secret.slice(0, 6)}...`)
+    console.log(`  cert_content:  ${result.cert_content.slice(0, 30)}...`)
   })
 
 // ── Hidden input helper ──────────────────────────────────────────────────
