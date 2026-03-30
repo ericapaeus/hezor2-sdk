@@ -81,6 +81,41 @@ export class Hezor2SDK {
     return fn(sdk)
   }
 
+  /**
+   * Fetch application credentials without creating a full SDK instance.
+   *
+   * Only requires `baseUrl`, `apiKey`, and `appName` — no signing
+   * configuration needed. Use the returned `cert_content` (private key)
+   * and `client_secret` (password) to initialise a signed SDK instance.
+   *
+   * @example
+   * ```ts
+   * const cert = await Hezor2SDK.getAppCerts('my_app', {
+   *   baseUrl: 'https://your-domain.com',
+   *   apiKey: 'your-api-key',
+   * })
+   * const sdk = new Hezor2SDK({
+   *   baseUrl: 'https://your-domain.com',
+   *   apiKey: 'your-api-key',
+   *   appName: 'my_app',
+   *   privateKeyPem: cert.cert_content,
+   *   password: cert.client_secret,
+   *   metaInfo: { caller_id: 'my_system', subject: 'org', subject_code: 'org_001' },
+   * })
+   * ```
+   */
+  static async getAppCerts(
+    appName: string,
+    options: Pick<Hezor2SDKOptions, 'baseUrl' | 'apiKey'> = {},
+  ): Promise<AppCertInfo> {
+    const client = new Hezor2APIClient({
+      baseUrl: options.baseUrl,
+      apiKey: options.apiKey,
+      appName,
+    })
+    return client.getAppCerts(appName)
+  }
+
   /** Generate unique report IDs with `rpt_` prefix. */
   async generateReportId(count: number = 1): Promise<string[]> {
     return this.client.generateReportId(count)
