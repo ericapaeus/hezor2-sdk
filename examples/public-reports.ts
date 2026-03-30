@@ -2,6 +2,8 @@
  * get_public_reports 使用示例
  *
  * 该 webhook 支持匿名访问（无需 API Key），只需提供 MetaInfo。
+ * 示例 1-2 演示匿名调用（不携带 API Key）。
+ * 示例 3 演示半认证调用（携带 API Key 但使用公共应用）。
  *
  * Usage:
  *   npx tsx examples/public-reports.ts        # 运行所有
@@ -17,7 +19,8 @@ import { runExamples } from './_runner.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const config = loadEnv(join(__dirname, '.env'))
 
-function createSdk(): Hezor2SDK {
+/** 匿名 SDK：不携带 API Key，仅提供 MetaInfo。 */
+function createAnonymousSdk(): Hezor2SDK {
   const metaInfo: MetaInfoData = {
     caller_id: 'example/public_reports',
     subject: 'example',
@@ -29,8 +32,6 @@ function createSdk(): Hezor2SDK {
 
   return new Hezor2SDK({
     baseUrl: config.hezor2ApiBaseUrl,
-    apiKey: config.hezor2ApiKey,
-    appName: config.hezor2AppName,
     metaInfo,
     privateKeyPath: config.hezor2HeaderPkFilepath,
     password: config.hezor2HeaderPkPassword,
@@ -38,10 +39,10 @@ function createSdk(): Hezor2SDK {
 }
 
 async function listPublicReports() {
-  console.log('  获取所有公开报告（默认 top_n=5）\n')
+  console.log('  匿名调用：获取所有公开报告（默认 top_n=5）\n')
 
   try {
-    const sdk = createSdk()
+    const sdk = createAnonymousSdk()
     const result = await sdk.getPublicReports()
 
     console.log(`  ✓ total: ${result.total}`)
@@ -62,10 +63,10 @@ async function listPublicReports() {
 
 async function listWithTopN() {
   const topN = 10
-  console.log(`  获取公开报告（top_n=${topN}）\n`)
+  console.log(`  匿名调用：获取公开报告（top_n=${topN}）\n`)
 
   try {
-    const sdk = createSdk()
+    const sdk = createAnonymousSdk()
     const result = await sdk.getPublicReports({ topN })
 
     console.log(`  ✓ total: ${result.total}`)
@@ -80,12 +81,21 @@ async function listWithTopN() {
 }
 
 async function filterByCreation() {
-  const creationId = 'crt_example_001'
-  console.log(`  获取指定 Creation 的公开报告: ${creationId}\n`)
+  console.log('  半认证调用：携带 API Key + 默认应用\n')
 
   try {
-    const sdk = createSdk()
-    const result = await sdk.getPublicReports({ creationId })
+    const sdk = new Hezor2SDK({
+      baseUrl: config.hezor2ApiBaseUrl,
+      apiKey: config.hezor2ApiKey,
+      metaInfo: {
+        caller_id: 'example/public_reports',
+        subject: 'example',
+        subject_code: 'example_001',
+      },
+      privateKeyPath: config.hezor2HeaderPkFilepath,
+      password: config.hezor2HeaderPkPassword,
+    })
+    const result = await sdk.getPublicReports({ topN: 5 })
 
     console.log(`  ✓ total: ${result.total}`)
     console.log(`  ✓ items: ${result.items.length}\n`)
@@ -102,7 +112,7 @@ async function filterByCreation() {
 }
 
 runExamples('get_public_reports', [
-  { name: '获取所有公开报告（默认参数）', run: listPublicReports },
-  { name: '获取公开报告（自定义 topN）', run: listWithTopN },
-  { name: '按 Creation ID 筛选公开报告', run: filterByCreation },
+  { name: '匿名调用（默认参数）', run: listPublicReports },
+  { name: '匿名调用（自定义 topN）', run: listWithTopN },
+  { name: '半认证调用（API Key + 默认应用）', run: filterByCreation },
 ])

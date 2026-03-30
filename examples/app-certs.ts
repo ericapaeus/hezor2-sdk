@@ -106,9 +106,61 @@ async function useAppCertsForSearch() {
   }
 }
 
+async function useAppCertsForPublicReports() {
+  const appName = config.hezor2AppName
+  if (!appName) {
+    console.log('  ⚠ HEZOR2_APP_NAME not set in .env — skipped.')
+    return
+  }
+
+  console.log(`  app_name: ${appName}\n`)
+
+  try {
+    // 1. 获取应用凭证（含私钥）
+    const cert = await Hezor2SDK.getAppCerts(appName, {
+      baseUrl: config.hezor2ApiBaseUrl,
+      apiKey: config.hezor2ApiKey,
+    })
+
+    console.log('  ✓ Got app certs, creating signed SDK\n')
+
+    // 2. 用获得的私钥 + client_secret 创建带签名的 SDK 实例
+    const sdk = new Hezor2SDK({
+      baseUrl: config.hezor2ApiBaseUrl,
+      apiKey: config.hezor2ApiKey,
+      appName,
+      metaInfo: {
+        caller_id: 'example/app_certs_reports',
+        subject: 'example',
+        subject_code: 'example_001',
+      },
+      privateKeyPem: cert.cert_content,
+      password: cert.client_secret,
+    })
+
+    // 3. 获取公开报告
+    const result = await sdk.getPublicReports({ topN: 5 })
+
+    console.log(`  ✓ total: ${result.total}`)
+    console.log(`  ✓ items: ${result.items.length}\n`)
+
+    for (const item of result.items) {
+      console.log(`    [${item.reportId}]`)
+      console.log(`      title:   ${item.reportTitle}`)
+      console.log(`      date:    ${item.generatedAt}`)
+      console.log(`      summary: ${item.summary.slice(0, 80)}${item.summary.length > 80 ? '…' : ''}`)
+      console.log(`      url:     ${item.reportUrl}`)
+      console.log()
+    }
+  } catch (err) {
+    console.log(`  ✗ ${err}`)
+  }
+}
+
 // ── Run ──────────────────────────────────────────────────────────────────
 
 runExamples('app-certs', [
   { name: '通过 API Key 获取应用凭证', run: getAppCerts },
   { name: '使用凭证私钥执行 knowledge search', run: useAppCertsForSearch },
+  { name: '使用凭证私钥获取公开报告', run: useAppCertsForPublicReports },
 ])
