@@ -12,6 +12,7 @@ import { DEFAULT_API_BASE_URL, DEFAULT_API_KEY } from './env-config.js'
 import { Hezor2APIClient } from './hezor2-api-client.js'
 import type { MetaInfoData } from './meta-info.js'
 import type {
+  AppCertInfo,
   ConnectRefreshResponse,
   ConnectVerifyResponse,
   CreationGenerateResult,
@@ -23,6 +24,7 @@ import type {
   PublishCreationResponseData,
   PullConfigsResponse,
   ReportMetadata,
+  UserAppBindingInfo,
   WebhookActionHelp,
 } from './types.js'
 
@@ -234,5 +236,27 @@ export class Hezor2SDK {
    */
   async buildConnectUrl(frontendUrl: string, callbackUrl: string): Promise<string> {
     return this.client.buildConnectUrl(frontendUrl, callbackUrl)
+  }
+
+  // ── App certs ──────────────────────────────────────────────────────────
+
+  /**
+   * Get application credentials.
+   *
+   * @param appName - Casdoor application name
+   */
+  async getAppCerts(appName: string): Promise<AppCertInfo> {
+    return this.client.getAppCerts(appName)
+  }
+
+  // ── My apps ────────────────────────────────────────────────────────────
+
+  /**
+   * Get current user's bound applications with credentials.
+   *
+   * Requires JWT authentication.
+   */
+  async getMyApps(): Promise<UserAppBindingInfo[]> {
+    return this.client.getMyApps()
   }
 }

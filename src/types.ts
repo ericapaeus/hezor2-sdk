@@ -404,6 +404,31 @@ export interface WechatPollOpenidResponse {
 }
 
 // ---------------------------------------------------------------------------
+// User-App binding models
+// ---------------------------------------------------------------------------
+
+export interface AppCertInfo {
+  app_name: string
+  org_name: string
+  client_id: string
+  client_secret: string
+  cert_content: string
+}
+
+export interface UserAppBindingInfo {
+  app_name: string
+  display_name: string
+  org_name: string
+  logo: string
+  description: string
+  is_default: boolean
+  enabled: boolean
+  client_id: string
+  client_secret: string
+  cert_content: string
+}
+
+// ---------------------------------------------------------------------------
 // App config models
 // ---------------------------------------------------------------------------
 

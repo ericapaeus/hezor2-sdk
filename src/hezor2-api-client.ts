@@ -8,6 +8,7 @@ import { BaseAPIClient, type BaseAPIClientOptions } from './base-api-client.js'
 import { REQ_HEADER_META_INFO_KEY } from './constants.js'
 import { DEFAULT_API_BASE_URL, DEFAULT_API_KEY } from './env-config.js'
 import type {
+  AppCertInfo,
   ConnectRefreshResponse,
   ConnectVerifyResponse,
   CreationGenerateResult,
@@ -20,6 +21,7 @@ import type {
   PublishCreationResponseData,
   PullConfigsResponse,
   ReportMetadata,
+  UserAppBindingInfo,
   WebhookActionHelp,
   WebhookResponse,
   WechatLoginUrlResponse,
@@ -427,5 +429,47 @@ export class Hezor2APIClient extends BaseAPIClient {
     })
 
     return `${frontendUrl.replace(/\/+$/, '')}/connect?${params}`
+  }
+
+  // ── App certs ──────────────────────────────────────────────────────────
+
+  /**
+   * Get application credentials.
+   *
+   * Uses API Key auth to fetch client_id, client_secret, and certificate
+   * for the specified app. The current user must be bound to the app.
+   *
+   * @param appName - Casdoor application name
+   */
+  async getAppCerts(appName: string): Promise<AppCertInfo> {
+    const response = await this.get('/app-certs', {
+      headers: { 'X-APP-NAME': appName },
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(`Get app certs failed: ${response.status} ${text}`)
+    }
+
+    return (await response.json()) as AppCertInfo
+  }
+
+  // ── My apps ────────────────────────────────────────────────────────────
+
+  /**
+   * Get current user's bound applications with credentials.
+   *
+   * Requires JWT authentication. Returns all apps bound to the
+   * current user with their client_id, client_secret, and certificate.
+   */
+  async getMyApps(): Promise<UserAppBindingInfo[]> {
+    const response = await this.get('/user/my-apps')
+
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(`Get my apps failed: ${response.status} ${text}`)
+    }
+
+    return (await response.json()) as UserAppBindingInfo[]
   }
 }

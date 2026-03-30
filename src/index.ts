@@ -90,4 +90,7 @@ export type {
   // WeChat
   WechatLoginUrlResponse,
   WechatPollOpenidResponse,
+  // App binding
+  AppCertInfo,
+  UserAppBindingInfo,
 } from './types.js'
