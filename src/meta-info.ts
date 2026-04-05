@@ -29,6 +29,8 @@ export interface MetaInfoData {
   creation_slug?: string
   /** 报告类型名称 */
   creation_name?: string
+  /** 可扩展信息字典，用于传递额外的上下文数据 */
+  extras?: Record<string, unknown>
 }
 
 async function encodeJwtWithPem(
