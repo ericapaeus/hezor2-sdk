@@ -270,6 +270,7 @@ export interface GraphNode {
   id: string
   labels: string[]
   name: string
+  entityId: string
   entityType: string
   description: string
   properties: Record<string, unknown>

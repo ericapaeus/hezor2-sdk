@@ -493,7 +493,7 @@ describe('Hezor2APIClient', () => {
       data: {
         queryType: 'entity_search',
         statistics: null,
-        nodes: [{ id: '1', labels: ['Entity'], name: 'Test', entityType: 'Person', description: '', properties: {} }],
+        nodes: [{ id: '1', labels: ['Entity'], name: 'Test', entityId: '', entityType: 'Person', description: '', properties: {} }],
         subgraph: null,
         pathResult: null,
         coOccurrences: null,
