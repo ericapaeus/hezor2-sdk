@@ -428,42 +428,44 @@ reports
   .option('-t, --task-id <id>', '任务 ID')
   .option('-e, --execution-id <id>', '执行 ID')
   .option('--raw', '输出原始 JSON')
-  .action(async (jsonFile: string, opts: { taskId?: string; executionId?: string; raw?: boolean }) => {
-    const fs = await import('node:fs')
-    const path = await import('node:path')
+  .action(
+    async (jsonFile: string, opts: { taskId?: string; executionId?: string; raw?: boolean }) => {
+      const fs = await import('node:fs')
+      const path = await import('node:path')
 
-    const resolved = path.resolve(jsonFile)
-    if (!fs.existsSync(resolved)) {
-      console.error(`✗ 文件不存在: ${resolved}`)
-      process.exit(1)
-    }
+      const resolved = path.resolve(jsonFile)
+      if (!fs.existsSync(resolved)) {
+        console.error(`✗ 文件不存在: ${resolved}`)
+        process.exit(1)
+      }
 
-    let data: Record<string, unknown>
-    try {
-      data = JSON.parse(fs.readFileSync(resolved, 'utf-8')) as Record<string, unknown>
-    } catch (err) {
-      console.error(`✗ JSON 解析失败: ${err instanceof Error ? err.message : String(err)}`)
-      process.exit(1)
-    }
+      let data: Record<string, unknown>
+      try {
+        data = JSON.parse(fs.readFileSync(resolved, 'utf-8')) as Record<string, unknown>
+      } catch (err) {
+        console.error(`✗ JSON 解析失败: ${err instanceof Error ? err.message : String(err)}`)
+        process.exit(1)
+      }
 
-    // 基本结构验证
-    const requiredFields = ['creation_id', 'title', 'full_content', 'subject', 'slug']
-    const missingFields = requiredFields.filter((f) => !(f in data))
-    if (missingFields.length > 0) {
-      console.error(`✗ JSON 数据缺少必填字段: ${missingFields.join(', ')}`)
-      process.exit(1)
-    }
+      // 基本结构验证
+      const requiredFields = ['creation_id', 'title', 'full_content', 'subject', 'slug']
+      const missingFields = requiredFields.filter((f) => !(f in data))
+      if (missingFields.length > 0) {
+        console.error(`✗ JSON 数据缺少必填字段: ${missingFields.join(', ')}`)
+        process.exit(1)
+      }
 
-    const profile = getProfile()
-    const sdk = createSDK(profile)
-    const result = await sdk.publishCreationReport(data as unknown as CreationGenerateResultV2, {
-      ...(opts.taskId ? { taskId: opts.taskId } : {}),
-      ...(opts.executionId ? { executionId: opts.executionId } : {}),
-    })
+      const profile = getProfile()
+      const sdk = createSDK(profile)
+      const result = await sdk.publishCreationReport(data as unknown as CreationGenerateResultV2, {
+        ...(opts.taskId ? { taskId: opts.taskId } : {}),
+        ...(opts.executionId ? { executionId: opts.executionId } : {}),
+      })
 
-    if (!opts.raw) console.log('✓ 报告发布成功！')
-    outputResult(result, opts.raw ?? false)
-  })
+      if (!opts.raw) console.log('✓ 报告发布成功！')
+      outputResult(result, opts.raw ?? false)
+    },
+  )
 
 // ── Knowledge ────────────────────────────────────────────────────────────
 
@@ -606,20 +608,22 @@ config
   .option('--global-base-url <url>', '替换 ${GLOBAL_BASE_URL} 占位符')
   .option('--merged', '输出合并后的配置')
   .option('--raw', '输出原始 JSON')
-  .action(async (opts: { key?: string[]; globalBaseUrl?: string; merged?: boolean; raw?: boolean }) => {
-    const profile = getProfile()
-    const sdk = createSDK(profile)
-    const result = await sdk.pullConfigs({
-      ...(opts.key ? { keys: opts.key } : {}),
-      ...(opts.globalBaseUrl ? { globalBaseUrl: opts.globalBaseUrl } : {}),
-    })
-    if (opts.merged) {
-      const { mergedConfigs } = await import('../types.js')
-      outputResult(mergedConfigs(result), opts.raw ?? false)
-    } else {
-      outputResult(result, opts.raw ?? false)
-    }
-  })
+  .action(
+    async (opts: { key?: string[]; globalBaseUrl?: string; merged?: boolean; raw?: boolean }) => {
+      const profile = getProfile()
+      const sdk = createSDK(profile)
+      const result = await sdk.pullConfigs({
+        ...(opts.key ? { keys: opts.key } : {}),
+        ...(opts.globalBaseUrl ? { globalBaseUrl: opts.globalBaseUrl } : {}),
+      })
+      if (opts.merged) {
+        const { mergedConfigs } = await import('../types.js')
+        outputResult(mergedConfigs(result), opts.raw ?? false)
+      } else {
+        outputResult(result, opts.raw ?? false)
+      }
+    },
+  )
 
 // ── Apps ─────────────────────────────────────────────────────────────────
 
