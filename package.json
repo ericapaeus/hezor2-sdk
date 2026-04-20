@@ -1,6 +1,6 @@
 {
   "name": "@hezor/hezor2-sdk",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Hezor2 SDK — shared utilities for third-party integrations",
   "keywords": [
     "hezor",
