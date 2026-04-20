@@ -43,9 +43,9 @@ export async function encodeJwt(
 export async function decodeJwt(
   publicKeyPem: string,
   token: string,
-  options: { algorithms?: string[]; verifySignature?: boolean } = {},
+  options: { algorithms?: string[]; verifySignature?: boolean; clockTolerance?: number } = {},
 ): Promise<Record<string, unknown>> {
-  const { algorithms = ['EdDSA'], verifySignature = true } = options
+  const { algorithms = ['EdDSA'], verifySignature = true, clockTolerance = 30 } = options
 
   if (!verifySignature) {
     // Decode without verification — just parse the payload
@@ -56,7 +56,7 @@ export async function decodeJwt(
   }
 
   const key = await importSPKI(publicKeyPem, algorithms[0]!)
-  const { payload } = await jwtVerify(token, key, { algorithms })
+  const { payload } = await jwtVerify(token, key, { algorithms, clockTolerance })
   return payload as Record<string, unknown>
 }
 
@@ -81,7 +81,7 @@ export async function encodeJwtWithPem(
 export async function decodeJwtWithPem(
   publicPem: string,
   token: string,
-  options: { algorithms?: string[]; verifySignature?: boolean } = {},
+  options: { algorithms?: string[]; verifySignature?: boolean; clockTolerance?: number } = {},
 ): Promise<Record<string, unknown>> {
   const pem = deserializePublicKey(publicPem)
   return decodeJwt(pem, token, options)
@@ -107,7 +107,7 @@ export async function encodeJwtWithFile(
 export async function decodeJwtWithFile(
   publicKeyPath: string,
   token: string,
-  options: { algorithms?: string[]; verifySignature?: boolean } = {},
+  options: { algorithms?: string[]; verifySignature?: boolean; clockTolerance?: number } = {},
 ): Promise<Record<string, unknown>> {
   const pem = readFileSync(publicKeyPath, 'utf-8')
   return decodeJwtWithPem(pem, token, options)
