@@ -6,6 +6,16 @@ export const REQ_HEADER_APP_NAME_KEY = 'X-APP-NAME'
 /** MetaInfo extras key for authorized toolkit IDs */
 export const META_EXTRAS_KEY_AUTHORIZED_TOOLKITS = 'authorized_toolkits'
 
+/**
+ * MetaInfo extras key for authorized knowledge base IDs in the current session.
+ *
+ * DANGER: When this field is empty or absent, downstream workflows treat it as
+ * "full KB access" (compat shim during the multi-KB migration). This will be
+ * tightened to "empty = no access" in the future; callers should not rely on
+ * the "unset = all" behavior.
+ */
+export const META_EXTRAS_KEY_AUTHORIZED_KB_IDS = 'authorized_kb_ids'
+
 export const ANONYMOUS_HEADER_PRIVATE_KEY = `-----BEGIN ENCRYPTED PRIVATE KEY-----
 MIGjMF8GCSqGSIb3DQEFDTBSMDEGCSqGSIb3DQEFDDAkBBApd1A1zS2kYA2PacTL
 ga12AgIIADAMBggqhkiG9w0CCQUAMB0GCWCGSAFlAwQBKgQQLqgqVXR/1YxTjbJ6
