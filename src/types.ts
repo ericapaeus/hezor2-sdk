@@ -139,6 +139,8 @@ export interface Chunk {
   status: string
   sourceFile: string
   fileType: string
+  /** Logical knowledge base IDs this chunk is a member of. */
+  kbIds?: string[]
 }
 
 export interface OntologyEntity {
@@ -156,6 +158,8 @@ export interface OntologyEntity {
   batchId: string
   contentId: string
   sourceFile: string
+  /** Logical knowledge base IDs this entity is a member of. */
+  kbIds?: string[]
 }
 
 export interface CommunityFinding {
@@ -181,6 +185,8 @@ export interface Community {
   batchId: string
   contentId: string
   sourceFile: string
+  /** Logical knowledge base IDs this community is a member of. */
+  kbIds?: string[]
 }
 
 export interface GalleryPicture {
@@ -200,6 +206,8 @@ export interface GalleryPicture {
   status: string
   sourceFile: string
   fileType: string
+  /** Logical knowledge base IDs this picture is a member of. */
+  kbIds?: string[]
 }
 
 export interface ScoredChunk {
