@@ -9,6 +9,7 @@ import {
   ANONYMOUS_HEADER_PRIVATE_KEY_PASSWORD,
   REQ_HEADER_APP_NAME_KEY,
 } from './constants.js'
+import { SubscriptionRequiredError } from './errors.js'
 import { type MetaInfoData, metaInfoToRequestHeader } from './meta-info.js'
 
 /** Default app name when none is provided (matches server DEFAULT_APP_NAME). */
@@ -31,6 +32,18 @@ export interface BaseAPIClientOptions {
   password?: string | undefined
   metaInfoExpiresIn?: number | undefined
   appName?: string | undefined
+  /**
+   * 收到 HTTP 402 响应时触发的回调。SDK 内部不会抛出 `SubscriptionRequiredError`
+   * （为保持现有 `Response` 返回契约），仅在每次返回前调用此 hook，由调用方决定
+   * 是否引导用户去订阅页。
+   *
+   * @param error 已构造好的 `SubscriptionRequiredError`，含响应体里的 `detail`（若解析成功）
+   * @param response 原始 `Response`，未消费 body
+   */
+  onSubscriptionRequired?: (
+    error: SubscriptionRequiredError,
+    response: Response,
+  ) => void | Promise<void>
 }
 
 export class BaseAPIClient {
@@ -43,6 +56,9 @@ export class BaseAPIClient {
   readonly password: string | undefined
   readonly metaInfoExpiresIn: number
   readonly appName: string | undefined
+  readonly onSubscriptionRequired:
+    | ((error: SubscriptionRequiredError, response: Response) => void | Promise<void>)
+    | undefined
 
   constructor(options: BaseAPIClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, '')
@@ -54,6 +70,7 @@ export class BaseAPIClient {
     this.password = options.password ?? undefined
     this.metaInfoExpiresIn = options.metaInfoExpiresIn ?? 3600
     this.appName = options.appName ?? undefined
+    this.onSubscriptionRequired = options.onSubscriptionRequired ?? undefined
   }
 
   /** Build request headers with auth and meta-info. */
@@ -113,6 +130,34 @@ export class BaseAPIClient {
     return headers
   }
 
+  /**
+   * 拦截 HTTP 402 响应：克隆 body 解析 detail，构造 `SubscriptionRequiredError`
+   * 并触发 `onSubscriptionRequired` 回调（不抛出，原 `Response` 仍照常返回）。
+   */
+  private async interceptResponse(response: Response): Promise<Response> {
+    if (response.status !== 402 || !this.onSubscriptionRequired) {
+      return response
+    }
+    let detail = 'subscription required'
+    try {
+      const cloned = response.clone()
+      const body = (await cloned.json()) as { detail?: string; message?: string } | null
+      if (body && typeof body === 'object') {
+        if (typeof body.detail === 'string') detail = body.detail
+        else if (typeof body.message === 'string') detail = body.message
+      }
+    } catch {
+      // body 不是 JSON 时退化为默认 detail
+    }
+    const error = new SubscriptionRequiredError(detail)
+    try {
+      await this.onSubscriptionRequired(error, response)
+    } catch {
+      // 回调抛出不影响主流程
+    }
+    return response
+  }
+
   /** Execute a GET request. */
   async get(
     path: string,
@@ -132,11 +177,12 @@ export class BaseAPIClient {
       url += `?${qs}`
     }
 
-    return fetch(url, {
+    const response = await fetch(url, {
       method: 'GET',
       headers,
       signal: AbortSignal.timeout(options?.timeout ?? this.timeout),
     })
+    return this.interceptResponse(response)
   }
 
   /** Execute a POST request. */
@@ -159,7 +205,8 @@ export class BaseAPIClient {
     }
     if (options?.json != null) init.body = JSON.stringify(options.json)
 
-    return fetch(`${this.baseUrl}${path}`, init)
+    const response = await fetch(`${this.baseUrl}${path}`, init)
+    return this.interceptResponse(response)
   }
 
   /** Execute a PUT request. */
@@ -180,7 +227,8 @@ export class BaseAPIClient {
     }
     if (options?.json != null) init.body = JSON.stringify(options.json)
 
-    return fetch(`${this.baseUrl}${path}`, init)
+    const response = await fetch(`${this.baseUrl}${path}`, init)
+    return this.interceptResponse(response)
   }
 
   /** Execute a PATCH request. */
@@ -201,7 +249,8 @@ export class BaseAPIClient {
     }
     if (options?.json != null) init.body = JSON.stringify(options.json)
 
-    return fetch(`${this.baseUrl}${path}`, init)
+    const response = await fetch(`${this.baseUrl}${path}`, init)
+    return this.interceptResponse(response)
   }
 
   /** Execute a DELETE request. */
@@ -211,10 +260,11 @@ export class BaseAPIClient {
   ): Promise<Response> {
     const headers = await this.buildRequestHeaders(options)
 
-    return fetch(`${this.baseUrl}${path}`, {
+    const response = await fetch(`${this.baseUrl}${path}`, {
       method: 'DELETE',
       headers,
       signal: AbortSignal.timeout(this.timeout),
     })
+    return this.interceptResponse(response)
   }
 }

@@ -16,6 +16,18 @@ export const META_EXTRAS_KEY_AUTHORIZED_TOOLKITS = 'authorized_toolkits'
  */
 export const META_EXTRAS_KEY_AUTHORIZED_KB_IDS = 'authorized_kb_ids'
 
+/**
+ * MetaInfo `auth_mode` 取值：第三方后端用 Ed25519 私钥签发 MetaInfo JWT
+ * （历史模式，`extras.authorized_*` 由调用方自报）。
+ */
+export const META_AUTH_MODE_PRIVATE_KEY = 'private_key'
+
+/**
+ * MetaInfo `auth_mode` 取值：用户在 `/oauth/consent` 主动授权后由平台签发；
+ * `extras.authorized_toolkits` 应等于 `grants ∩ subscriptions`，调用方不得自报。
+ */
+export const META_AUTH_MODE_OAUTH = 'oauth'
+
 export const ANONYMOUS_HEADER_PRIVATE_KEY = `-----BEGIN ENCRYPTED PRIVATE KEY-----
 MIGjMF8GCSqGSIb3DQEFDTBSMDEGCSqGSIb3DQEFDDAkBBApd1A1zS2kYA2PacTL
 ga12AgIIADAMBggqhkiG9w0CCQUAMB0GCWCGSAFlAwQBKgQQLqgqVXR/1YxTjbJ6

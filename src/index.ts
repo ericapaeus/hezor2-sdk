@@ -38,7 +38,24 @@ export {
   ANONYMOUS_HEADER_PUBLIC_KEY,
   META_EXTRAS_KEY_AUTHORIZED_TOOLKITS,
   META_EXTRAS_KEY_AUTHORIZED_KB_IDS,
+  META_AUTH_MODE_PRIVATE_KEY,
+  META_AUTH_MODE_OAUTH,
 } from './constants.js'
+
+// --- Errors ---
+export {
+  HezorError,
+  SubscriptionRequiredError,
+  OAuthError,
+  ScopeNotAllowedError,
+  ToolkitSubscriptionRequiredError,
+  InvalidRedirectUriError,
+  ClientNotFoundError,
+  OAuthInvalidGrantError,
+  ConnectError,
+  ConnectInvalidGrantError,
+  ConnectAppMismatchError,
+} from './errors.js'
 
 // --- Security ---
 export * as security from './security/index.js'

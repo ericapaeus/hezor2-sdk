@@ -31,6 +31,18 @@ export interface MetaInfoData {
   creation_name?: string
   /** 可扩展信息字典，用于传递额外的上下文数据 */
   extras?: Record<string, unknown>
+  /**
+   * 本次请求所属的授权模式：
+   * - `'private_key'`：第三方后端用 Ed25519 私钥签发（历史模式，`extras.authorized_*` 由调用方自报）
+   * - `'oauth'`：用户在 `/oauth/consent` 主动授权后由平台签发，`extras.authorized_toolkits` 应等于 `grants ∩ subscriptions`
+   * - `undefined`：兼容旧客户端，按 `'private_key'` 处理
+   */
+  auth_mode?: 'private_key' | 'oauth'
+  /**
+   * OAuth 模式下用户对该应用的授权版本号；用户撤销 / 调整 scope 后递增，
+   * 网关比对 token claim 与当前 grant 不一致即拒绝。私钥模式下保持 undefined。
+   */
+  grant_version?: number
 }
 
 async function encodeJwtWithPem(
