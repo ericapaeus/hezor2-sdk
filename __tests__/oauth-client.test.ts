@@ -352,4 +352,31 @@ describe('OAuthClient.pollDeviceToken', () => {
     ).rejects.toMatchObject({ name: 'OAuthError', code: 'polling_aborted' })
     expect(fetchImpl).not.toHaveBeenCalled()
   })
+
+  it('retries on transient network errors (AbortError) instead of bubbling out', async () => {
+    const tokenResp: OAuthTokenResponse = {
+      access_token: 'at_yes',
+      token_type: 'Bearer',
+      expires_in: 3600,
+      scope: '',
+    }
+    const abortErr = new Error('The operation was aborted')
+    abortErr.name = 'AbortError'
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValueOnce(abortErr)
+      .mockResolvedValueOnce(makeJsonResponse(tokenResp))
+    const client = newClient(fetchImpl)
+
+    const promise = client.pollDeviceToken({
+      deviceCode: 'dc',
+      interval: 1,
+      expiresIn: 60,
+    })
+    await vi.advanceTimersByTimeAsync(1_500)
+    const out = await promise
+
+    expect(out).toEqual(tokenResp)
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
 })

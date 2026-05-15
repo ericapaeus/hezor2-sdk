@@ -121,9 +121,12 @@ export interface RequestDeviceCodeOptions {
 /** `pollDeviceToken` 参数。 */
 export interface PollDeviceTokenOptions {
   deviceCode: string
-  /** 轮询间隔（秒），默认沿用 device_code 响应里的 `interval`；遇 `slow_down` 自动 +5s。 */
+  /**
+   * 轮询间隔（秒）。**调用方应显式传入 `requestDeviceCode()` 返回的 `interval`**；
+   * 未传时退化为 `5` 秒。遇 `slow_down` 自动 +5s（RFC 8628 §3.5）。
+   */
   interval?: number
-  /** 最长轮询时间（秒），默认沿用 `expires_in`。 */
+  /** 最长轮询时间（秒），通常传 device_code 响应里的 `expires_in`。 */
   expiresIn: number
   /** 每次轮询前回调，便于调用方打印进度或主动中止（返回 `false` 终止）。 */
   onPoll?: (info: { elapsed: number; nextInterval: number }) => boolean | void
@@ -136,9 +139,19 @@ export interface PollDeviceTokenOptions {
 const PKCE_VERIFIER_LENGTH = 64
 
 function base64UrlEncode(bytes: Uint8Array): string {
-  // Node 18+ 始终有 Buffer；浏览器环境通过打包器 polyfill 或显式 Uint8Array→base64。
-  // 这里固定走 Buffer 路径，避免 ESLint no-undef 误报 btoa。
-  const b64 = Buffer.from(bytes).toString('base64')
+  // 浏览器优先走 globalThis.btoa；Node 18+ 用 Buffer 兜底。
+  // 避免 ESLint no-undef 误报：通过 globalThis 显式访问 btoa。
+  let b64: string
+  const g = globalThis as { btoa?: (s: string) => string }
+  if (typeof g.btoa === 'function') {
+    let binary = ''
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]!)
+    }
+    b64 = g.btoa(binary)
+  } else {
+    b64 = Buffer.from(bytes).toString('base64')
+  }
   return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
@@ -326,15 +339,20 @@ export class OAuthClient {
           device_code: options.deviceCode,
         })
       } catch (e) {
+        // OAuth 协议层可重试错误（authorization_pending / slow_down）。
         if (e instanceof OAuthError && DEVICE_FLOW_RETRYABLE_ERRORS.has(e.code)) {
           if (e.code === 'slow_down') interval += 5
-          // sleep 不超过剩余 deadline，避免超时判定滞后一个 interval。
-          const remainingMs = deadlineMs - Date.now()
-          if (remainingMs <= 0) continue
-          await sleep(Math.min(interval * 1000, remainingMs))
-          continue
+        } else if (isTransientNetworkError(e)) {
+          // 网络抖动 / 单次请求超时（AbortError）按 RFC 8628 容错预期：继续轮询。
+          // 不调整 interval，沿用当前值。
+        } else {
+          throw e
         }
-        throw e
+        // sleep 不超过剩余 deadline，避免超时判定滞后一个 interval。
+        const remainingMs = deadlineMs - Date.now()
+        if (remainingMs <= 0) continue
+        await sleep(Math.min(interval * 1000, remainingMs))
+        continue
       }
     }
   }
@@ -445,4 +463,23 @@ export class OAuthClient {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * 判定一个异常是否为"瞬时网络错误"（应在 device flow 轮询里被吞掉重试）。
+ *
+ * 覆盖：
+ * - `AbortError`（fetchWithTimeout 单次超时触发的 AbortController）
+ * - `TypeError`（fetch API 在网络层失败时的标准抛出，例如 DNS / 连接重置）
+ * - 节点 `FetchError` / `undici` 错误的常见 `code`（ECONNRESET / ETIMEDOUT / ENOTFOUND 等）
+ */
+function isTransientNetworkError(e: unknown): boolean {
+  if (!(e instanceof Error)) return false
+  if (e.name === 'AbortError' || e.name === 'TimeoutError') return true
+  if (e.name === 'TypeError' && /fetch|network/i.test(e.message)) return true
+  const code = (e as Error & { code?: string }).code
+  if (code && /^(ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|UND_ERR)/.test(code)) {
+    return true
+  }
+  return false
 }

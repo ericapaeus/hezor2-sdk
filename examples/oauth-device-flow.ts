@@ -28,7 +28,7 @@
  * --------------
  *   HEZOR2_API_BASE_URL    后端地址
  *   OAUTH_CLIENT_ID        Casdoor Application.client_id（必填）
- *   OAUTH_DEVICE_ID        设备唯一指纹（必填，与 silicon_runtime.device_id 同来源）
+ *   OAUTH_DEVICE_ID        设备唯一指纹（可选；默认 `demo-${hostname}-${pid}`）
  *   OAUTH_SCOPE            空格分隔 scope，可选
  *   OAUTH_HOSTNAME / OAUTH_OS / OAUTH_RUNTIME_KIND / OAUTH_VENDOR  可选元信息
  */
@@ -85,14 +85,13 @@ async function fullDeviceFlow() {
   console.log(`    expires_in:                 ${deviceCodeResp.expires_in}s`)
   console.log(`    interval:                   ${deviceCodeResp.interval}s`)
 
-  console.log('\n  ┌─────────────────────────────────────────────────────────┐')
-  console.log('  │  请在浏览器打开下列 URL 完成授权：                       │')
-  console.log('  │                                                          │')
-  console.log(`  │  ${deviceCodeResp.verification_uri_complete.padEnd(56)}│`)
-  console.log('  │                                                          │')
-  console.log(`  │  或访问 ${deviceCodeResp.verification_uri.padEnd(34)}手动输入：    │`)
-  console.log(`  │  ${deviceCodeResp.user_code.padEnd(56)}│`)
-  console.log('  └─────────────────────────────────────────────────────────┘\n')
+  console.log('\n  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+  console.log('  请在浏览器打开下列 URL 完成授权：')
+  console.log(`    ${deviceCodeResp.verification_uri_complete}`)
+  console.log('  或访问以下 URL 手动输入 user_code：')
+  console.log(`    ${deviceCodeResp.verification_uri}`)
+  console.log(`    user_code: ${deviceCodeResp.user_code}`)
+  console.log('  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
 
   console.log('  步骤 2：开始轮询 /oauth/token …（用户授权后立即返回）')
   try {
