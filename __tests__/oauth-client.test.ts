@@ -349,7 +349,7 @@ describe('OAuthClient.pollDeviceToken', () => {
         expiresIn: 60,
         onPoll: () => false,
       }),
-    ).rejects.toMatchObject({ name: 'OAuthError', code: 'access_denied' })
+    ).rejects.toMatchObject({ name: 'OAuthError', code: 'polling_aborted' })
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 })

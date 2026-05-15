@@ -268,8 +268,10 @@ export class OAuthClient {
     const body: Record<string, unknown> = {
       client_id: this.clientId,
       device_id: options.deviceId,
-      scope: options.scope ?? '',
     }
+    // 仅在显式传入时下发 scope；空串与未传在后端语义不同，前者会跳过
+    // application.default_scopes 兜底，后者不会。
+    if (options.scope) body['scope'] = options.scope
     if (options.hostname) body['hostname'] = options.hostname
     if (options.os) body['os'] = options.os
     if (options.runtimeKind) body['runtime_kind'] = options.runtimeKind
@@ -302,10 +304,12 @@ export class OAuthClient {
       const elapsed = Math.floor((Date.now() - start) / 1000)
       const cont = options.onPoll?.({ elapsed, nextInterval: interval })
       if (cont === false) {
+        // 用独立 code 区分"调用方主动中止" vs RFC 6749 的 access_denied
+        // （后者代表用户在浏览器上点了拒绝）。
         throw new OAuthError({
-          code: 'access_denied',
+          code: 'polling_aborted',
           detail: 'polling aborted by caller',
-          statusCode: 400,
+          statusCode: 499,
         })
       }
       if (Date.now() >= deadlineMs) {
@@ -324,7 +328,10 @@ export class OAuthClient {
       } catch (e) {
         if (e instanceof OAuthError && DEVICE_FLOW_RETRYABLE_ERRORS.has(e.code)) {
           if (e.code === 'slow_down') interval += 5
-          await sleep(interval * 1000)
+          // sleep 不超过剩余 deadline，避免超时判定滞后一个 interval。
+          const remainingMs = deadlineMs - Date.now()
+          if (remainingMs <= 0) continue
+          await sleep(Math.min(interval * 1000, remainingMs))
           continue
         }
         throw e
