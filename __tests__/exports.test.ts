@@ -5,6 +5,10 @@ import {
   Hezor2SDK,
   Hezor2APIClient,
   BaseAPIClient,
+  OAuthClient,
+  generatePKCEPair,
+  generateState,
+  DEVICE_CODE_GRANT_TYPE,
   loadEnv,
   mergedConfigs,
   metaInfoToRequestHeader,
@@ -33,6 +37,14 @@ describe('hezor2-sdk exports', () => {
   it('should export API client classes', () => {
     expect(Hezor2APIClient).toBeDefined()
     expect(BaseAPIClient).toBeDefined()
+  })
+
+  it('should export OAuthClient and PKCE helpers', () => {
+    expect(OAuthClient).toBeDefined()
+    expect(typeof OAuthClient).toBe('function')
+    expect(typeof generatePKCEPair).toBe('function')
+    expect(typeof generateState).toBe('function')
+    expect(DEVICE_CODE_GRANT_TYPE).toBe('urn:ietf:params:oauth:grant-type:device_code')
   })
 
   it('should export constants', () => {
