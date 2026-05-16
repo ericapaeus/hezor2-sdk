@@ -10,7 +10,7 @@ describe('Hezor2SDK', () => {
 
   it('should instantiate with custom options', () => {
     const sdk = new Hezor2SDK({
-      baseUrl: 'https://api.hezor.ai',
+      baseUrl: 'https://api.hezor.ai/api/v1',
       apiKey: 'custom-key',
       timeout: 30_000,
       appName: 'test-app',
@@ -58,7 +58,7 @@ describe('Hezor2SDK', () => {
       )
 
       const ids = await Hezor2SDK.with(
-        { baseUrl: 'http://localhost:8000', apiKey: 'key' },
+        { baseUrl: 'http://localhost:8000/api/v1', apiKey: 'key' },
         async (sdk) => sdk.generateReportId(1),
       )
       expect(ids).toEqual(['rpt_test'])
@@ -67,7 +67,7 @@ describe('Hezor2SDK', () => {
     it('should propagate errors from the callback', async () => {
       await expect(
         Hezor2SDK.with(
-          { baseUrl: 'http://localhost:8000', apiKey: 'key' },
+          { baseUrl: 'http://localhost:8000/api/v1', apiKey: 'key' },
           async () => {
             throw new Error('callback error')
           },
@@ -77,7 +77,7 @@ describe('Hezor2SDK', () => {
 
     it('should return the callback result', async () => {
       const result = await Hezor2SDK.with(
-        { baseUrl: 'http://localhost:8000', apiKey: 'key' },
+        { baseUrl: 'http://localhost:8000/api/v1', apiKey: 'key' },
         async () => 42,
       )
       expect(result).toBe(42)
@@ -95,7 +95,7 @@ describe('Hezor2SDK', () => {
     it('should return false on network error', async () => {
       fetchSpy.mockRejectedValue(new Error('Network error'))
       const sdk = new Hezor2SDK({
-        baseUrl: 'http://localhost:8000',
+        baseUrl: 'http://localhost:8000/api/v1',
         apiKey: 'key',
       })
       const [isHealthy, data] = await sdk.healthCheck()

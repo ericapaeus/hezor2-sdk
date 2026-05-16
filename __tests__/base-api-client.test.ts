@@ -8,22 +8,22 @@ import type { MetaInfoData } from '@hezor/hezor2-sdk'
 
 describe('BaseAPIClient', () => {
   it('should build correct base URL (strip trailing slashes)', () => {
-    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000/' })
-    expect(client.baseUrl).toBe('http://localhost:8000')
+    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000/api/v1/' })
+    expect(client.baseUrl).toBe('http://localhost:8000/api/v1')
   })
 
   it('should strip multiple trailing slashes', () => {
-    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000///' })
-    expect(client.baseUrl).toBe('http://localhost:8000')
+    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000/api/v1///' })
+    expect(client.baseUrl).toBe('http://localhost:8000/api/v1')
   })
 
   it('should apply default timeout', () => {
-    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000' })
+    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000/api/v1' })
     expect(client.timeout).toBe(120_000)
   })
 
   it('should accept custom timeout', () => {
-    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000', timeout: 5_000 })
+    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000/api/v1', timeout: 5_000 })
     expect(client.timeout).toBe(5_000)
   })
 
@@ -34,7 +34,7 @@ describe('BaseAPIClient', () => {
       caller_id: 'cid',
     }
     const client = new BaseAPIClient({
-      baseUrl: 'http://localhost:8000',
+      baseUrl: 'http://localhost:8000/api/v1',
       apiKey: 'key',
       metaInfo,
       privateKeyPath: '/path/to/key.pem',
@@ -53,7 +53,7 @@ describe('BaseAPIClient', () => {
   })
 
   it('should default optional fields to undefined', () => {
-    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000' })
+    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000/api/v1' })
     expect(client.apiKey).toBeUndefined()
     expect(client.metaInfo).toBeUndefined()
     expect(client.privateKeyPath).toBeUndefined()
@@ -65,7 +65,7 @@ describe('BaseAPIClient', () => {
 
   it('should build headers with API key', async () => {
     const client = new BaseAPIClient({
-      baseUrl: 'http://localhost:8000',
+      baseUrl: 'http://localhost:8000/api/v1',
       apiKey: 'test-key',
     })
     const headers = await client.getHeaders()
@@ -75,7 +75,7 @@ describe('BaseAPIClient', () => {
 
   it('should include app name header', async () => {
     const client = new BaseAPIClient({
-      baseUrl: 'http://localhost:8000',
+      baseUrl: 'http://localhost:8000/api/v1',
       appName: 'my-app',
     })
     const headers = await client.getHeaders()
@@ -83,19 +83,19 @@ describe('BaseAPIClient', () => {
   })
 
   it('should not include Authorization if no apiKey', async () => {
-    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000' })
+    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000/api/v1' })
     const headers = await client.getHeaders()
     expect(headers).not.toHaveProperty('Authorization')
   })
 
   it('should use default X-APP-NAME "public" if no appName', async () => {
-    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000' })
+    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000/api/v1' })
     const headers = await client.getHeaders()
     expect(headers['X-APP-NAME']).toBe('public')
   })
 
   it('should include default X-META-INFO even if no metaInfo provided', async () => {
-    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000' })
+    const client = new BaseAPIClient({ baseUrl: 'http://localhost:8000/api/v1' })
     const headers = await client.getHeaders()
     expect(headers).toHaveProperty('X-META-INFO')
     expect(headers['X-META-INFO']!.split('.')).toHaveLength(3)
@@ -103,7 +103,7 @@ describe('BaseAPIClient', () => {
 
   it('should use anonymous key for metaInfo when no private key provided', async () => {
     const client = new BaseAPIClient({
-      baseUrl: 'http://localhost:8000',
+      baseUrl: 'http://localhost:8000/api/v1',
       metaInfo: {
         subject: 'test',
         subject_code: 'tc',
@@ -121,7 +121,7 @@ describe('BaseAPIClient', () => {
     const pem = await exportPKCS8(privateKey)
 
     const client = new BaseAPIClient({
-      baseUrl: 'http://localhost:8000',
+      baseUrl: 'http://localhost:8000/api/v1',
       metaInfo: {
         subject: 'test',
         subject_code: 'tc',
@@ -144,7 +144,7 @@ describe('BaseAPIClient', () => {
 
     try {
       const client = new BaseAPIClient({
-        baseUrl: 'http://localhost:8000',
+        baseUrl: 'http://localhost:8000/api/v1',
         metaInfo: {
           subject: 'test',
           subject_code: 'tc',
@@ -165,7 +165,7 @@ describe('BaseAPIClient', () => {
 
     beforeEach(() => {
       client = new BaseAPIClient({
-        baseUrl: 'http://localhost:8000',
+        baseUrl: 'http://localhost:8000/api/v1',
         apiKey: 'test-key',
       })
       fetchSpy = vi.fn().mockResolvedValue(new Response('ok', { status: 200 }))
@@ -175,7 +175,7 @@ describe('BaseAPIClient', () => {
     it('should send GET request with correct URL', async () => {
       await client.get('/api/test')
       const [url, options] = fetchSpy.mock.calls[0]!
-      expect(url).toBe('http://localhost:8000/api/test')
+      expect(url).toBe('http://localhost:8000/api/v1/api/test')
       expect(options.method).toBe('GET')
     })
 
@@ -190,7 +190,7 @@ describe('BaseAPIClient', () => {
     it('should send POST request with JSON body', async () => {
       await client.post('/api/test', { json: { key: 'value' } })
       const [url, options] = fetchSpy.mock.calls[0]!
-      expect(url).toBe('http://localhost:8000/api/test')
+      expect(url).toBe('http://localhost:8000/api/v1/api/test')
       expect(options.method).toBe('POST')
       expect(JSON.parse(options.body)).toEqual({ key: 'value' })
     })
@@ -218,7 +218,7 @@ describe('BaseAPIClient', () => {
     it('should send DELETE request', async () => {
       await client.delete('/api/test')
       const [url, options] = fetchSpy.mock.calls[0]!
-      expect(url).toBe('http://localhost:8000/api/test')
+      expect(url).toBe('http://localhost:8000/api/v1/api/test')
       expect(options.method).toBe('DELETE')
     })
 
@@ -239,7 +239,7 @@ describe('BaseAPIClient', () => {
 
     it('should set timeout signal on requests', async () => {
       const clientWithTimeout = new BaseAPIClient({
-        baseUrl: 'http://localhost:8000',
+        baseUrl: 'http://localhost:8000/api/v1',
         timeout: 5_000,
       })
       await clientWithTimeout.get('/api/test')

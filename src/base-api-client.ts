@@ -11,6 +11,7 @@ import {
 } from './constants.js'
 import { SubscriptionRequiredError } from './errors.js'
 import { type MetaInfoData, metaInfoToRequestHeader } from './meta-info.js'
+import { normalizeBaseUrl } from './utils/base-url.js'
 
 /** Default app name when none is provided (matches server DEFAULT_APP_NAME). */
 const DEFAULT_APP_NAME = 'public'
@@ -67,7 +68,7 @@ export class BaseAPIClient {
     | undefined
 
   constructor(options: BaseAPIClientOptions) {
-    this.baseUrl = options.baseUrl.replace(/\/+$/, '')
+    this.baseUrl = normalizeBaseUrl(options.baseUrl)
     this.timeout = options.timeout ?? 120_000
     this.apiKey = options.apiKey ?? undefined
     this.metaInfo = options.metaInfo ?? undefined

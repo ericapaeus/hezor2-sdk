@@ -73,6 +73,9 @@ export {
   ConnectAppMismatchError,
 } from './errors.js'
 
+// --- Utils ---
+export { normalizeBaseUrl, InvalidBaseUrlError } from './utils/base-url.js'
+
 // --- Security ---
 export * as security from './security/index.js'
 

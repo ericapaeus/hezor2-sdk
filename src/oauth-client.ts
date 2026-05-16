@@ -28,6 +28,7 @@
  */
 
 import { OAuthError, OAuthInvalidGrantError } from './errors.js'
+import { normalizeBaseUrl } from './utils/base-url.js'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -211,9 +212,8 @@ export class OAuthClient {
   private readonly fetchImpl: typeof globalThis.fetch
 
   constructor(options: OAuthClientOptions) {
-    if (!options.baseUrl) throw new Error('baseUrl required')
     if (!options.clientId) throw new Error('clientId required')
-    this.baseUrl = options.baseUrl.replace(/\/+$/, '')
+    this.baseUrl = normalizeBaseUrl(options.baseUrl)
     this.clientId = options.clientId
     this.redirectUri = options.redirectUri
     this.timeout = options.timeout ?? 30_000
