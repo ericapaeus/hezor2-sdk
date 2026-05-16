@@ -418,15 +418,29 @@ export class OAuthClient {
   private async throwFromErrorResponse(resp: Response): Promise<never> {
     let code = 'oauth_error'
     let detail = `HTTP ${resp.status}`
+    type OAuthErrorShape = { error?: string; error_description?: string }
     try {
       const body = (await resp.json()) as {
         error?: string
         error_description?: string
-        detail?: { error?: string; error_description?: string } | string
+        detail?: OAuthErrorShape | string
+        // hezor2 顶层 http_exception_handler 包装：
+        // { "error": "HTTP_ERROR", "status_code": 400, "path": "...",
+        //   "message": { "error": "authorization_pending", "error_description": "..." } }
+        message?: OAuthErrorShape | string
       }
-      // FastAPI 默认把 HTTPException(detail=...) 包成 { detail: ... }；
-      // 后端在 oauth.py 里 detail = {"error": ..., "error_description": ...}。
-      if (typeof body?.detail === 'object' && body.detail) {
+      // 优先识别 hezor2 envelope：当外层 error=HTTP_ERROR 且 message 为 OAuth 错误对象时，
+      // 拆出内层；否则按 FastAPI 原生 detail / 裸 OAuth 形态处理。
+      if (
+        body?.error === 'HTTP_ERROR' &&
+        typeof body.message === 'object' &&
+        body.message !== null
+      ) {
+        code = body.message.error ?? code
+        detail = body.message.error_description ?? detail
+      } else if (typeof body?.detail === 'object' && body.detail) {
+        // FastAPI 默认把 HTTPException(detail=...) 包成 { detail: ... }；
+        // 后端在 oauth.py 里 detail = {"error": ..., "error_description": ...}。
         code = body.detail.error ?? code
         detail = body.detail.error_description ?? detail
       } else if (body?.error) {
@@ -434,6 +448,8 @@ export class OAuthClient {
         detail = body.error_description ?? detail
       } else if (typeof body?.detail === 'string') {
         detail = body.detail
+      } else if (typeof body?.message === 'string') {
+        detail = body.message
       }
     } catch {
       // 非 JSON 响应，沿用 HTTP 状态。

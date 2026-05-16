@@ -177,6 +177,34 @@ describe('OAuthClient.exchangeAuthorizationCode', () => {
       detail: 'oops',
     })
   })
+
+  it('unwraps hezor2 HTTP_ERROR envelope (message=OAuth error object)', async () => {
+    // hezor2 app/web/main.py 的顶层 http_exception_handler 会把 OAuth 错误包成
+    // { error: "HTTP_ERROR", status_code, path, message: { error, error_description } }
+    // SDK 应识别这个 envelope 并拆出内层错误码 / 描述。
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: 'HTTP_ERROR',
+          status_code: 400,
+          path: '/api/v1/oauth/token',
+          message: {
+            error: 'invalid_client',
+            error_description: 'oauth disabled',
+          },
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
+    const client = newClient(fetchImpl)
+    await expect(
+      client.exchangeAuthorizationCode({ code: 'x', codeVerifier: 'y' }),
+    ).rejects.toMatchObject({
+      name: 'OAuthError',
+      code: 'invalid_client',
+      detail: 'oauth disabled',
+    })
+  })
 })
 
 // ---------------------------------------------------------------------------
