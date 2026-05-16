@@ -18,6 +18,22 @@ export { Hezor2SDK, type Hezor2SDKOptions } from './hezor2-sdk.js'
 export { Hezor2APIClient, type Hezor2APIClientOptions } from './hezor2-api-client.js'
 export { BaseAPIClient, type BaseAPIClientOptions } from './base-api-client.js'
 
+// --- OAuth Client（Auth Code + PKCE / Device Flow / refresh / revoke） ---
+export {
+  OAuthClient,
+  generatePKCEPair,
+  generateState,
+  DEVICE_CODE_GRANT_TYPE,
+  type OAuthClientOptions,
+  type OAuthTokenResponse,
+  type DeviceCodeResponse,
+  type PKCEPair,
+  type BuildAuthorizeUrlOptions,
+  type ExchangeAuthorizationCodeOptions,
+  type RequestDeviceCodeOptions,
+  type PollDeviceTokenOptions,
+} from './oauth-client.js'
+
 // --- MetaInfo ---
 export { metaInfoToRequestHeader, type MetaInfoData } from './meta-info.js'
 
