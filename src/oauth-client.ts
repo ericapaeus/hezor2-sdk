@@ -28,20 +28,17 @@
  */
 
 import { OAuthError, OAuthInvalidGrantError } from './errors.js'
+import { normalizeBaseUrl } from './utils/base-url.js'
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 /** RFC 8628 device_code grant_type URN。 */
-export const DEVICE_CODE_GRANT_TYPE =
-  'urn:ietf:params:oauth:grant-type:device_code'
+export const DEVICE_CODE_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
 
 /** RFC 8628 §3.5 设备端轮询时的可重试错误码。 */
-const DEVICE_FLOW_RETRYABLE_ERRORS = new Set([
-  'authorization_pending',
-  'slow_down',
-])
+const DEVICE_FLOW_RETRYABLE_ERRORS = new Set(['authorization_pending', 'slow_down'])
 
 // ---------------------------------------------------------------------------
 // Types
@@ -75,7 +72,11 @@ export interface PKCEPair {
 
 /** OAuth 客户端构造参数。 */
 export interface OAuthClientOptions {
-  /** hezor2 API base URL，例如 `http://localhost:8000`（不含末尾 `/`）。 */
+  /**
+   * hezor2 API base URL，**必须包含 `/api/v1` 前缀**（例如
+   * `https://hezor.ai/api/v1` 或 `http://localhost:8000/api/v1`，不含末尾 `/`）。
+   * SDK 内部按 `${baseUrl}/oauth/authorize` 等方式拼接，不会再补 `/api/v1`。
+   */
   baseUrl: string
   /** 当前应用的 client_id（Casdoor Application.client_id）。 */
   clientId: string
@@ -170,10 +171,7 @@ export async function generatePKCEPair(): Promise<PKCEPair> {
   cryptoObj.getRandomValues(verifierBytes)
   const code_verifier = base64UrlEncode(verifierBytes)
 
-  const digest = await cryptoObj.subtle.digest(
-    'SHA-256',
-    new TextEncoder().encode(code_verifier),
-  )
+  const digest = await cryptoObj.subtle.digest('SHA-256', new TextEncoder().encode(code_verifier))
   const code_challenge = base64UrlEncode(new Uint8Array(digest))
 
   return { code_verifier, code_challenge, code_challenge_method: 'S256' }
@@ -207,9 +205,8 @@ export class OAuthClient {
   private readonly fetchImpl: typeof globalThis.fetch
 
   constructor(options: OAuthClientOptions) {
-    if (!options.baseUrl) throw new Error('baseUrl required')
     if (!options.clientId) throw new Error('clientId required')
-    this.baseUrl = options.baseUrl.replace(/\/+$/, '')
+    this.baseUrl = normalizeBaseUrl(options.baseUrl)
     this.clientId = options.clientId
     this.redirectUri = options.redirectUri
     this.timeout = options.timeout ?? 30_000
@@ -275,9 +272,7 @@ export class OAuthClient {
    * 拿到响应后，应将 `verification_uri_complete` 显示给用户（终端打印 / 二维码），
    * 并立即调用 `pollDeviceToken({ deviceCode })` 等待用户授权。
    */
-  async requestDeviceCode(
-    options: RequestDeviceCodeOptions,
-  ): Promise<DeviceCodeResponse> {
+  async requestDeviceCode(options: RequestDeviceCodeOptions): Promise<DeviceCodeResponse> {
     const body: Record<string, unknown> = {
       client_id: this.clientId,
       device_id: options.deviceId,
@@ -306,9 +301,7 @@ export class OAuthClient {
    * - 其它 OAuth 错误 → 抛 `OAuthError`（含 `access_denied` / `expired_token`）。
    * - 成功 → 返回 `OAuthTokenResponse`。
    */
-  async pollDeviceToken(
-    options: PollDeviceTokenOptions,
-  ): Promise<OAuthTokenResponse> {
+  async pollDeviceToken(options: PollDeviceTokenOptions): Promise<OAuthTokenResponse> {
     let interval = options.interval ?? 5
     const start = Date.now()
     const deadlineMs = start + options.expiresIn * 1000
@@ -395,9 +388,7 @@ export class OAuthClient {
   // 内部
   // -------------------------------------------------------------------------
 
-  private async tokenRequest(
-    fields: Record<string, string>,
-  ): Promise<OAuthTokenResponse> {
+  private async tokenRequest(fields: Record<string, string>): Promise<OAuthTokenResponse> {
     const form = new URLSearchParams(fields)
     const resp = await this.fetchWithTimeout(`${this.baseUrl}/oauth/token`, {
       method: 'POST',
@@ -407,10 +398,7 @@ export class OAuthClient {
     return this.parseJsonOrThrow<OAuthTokenResponse>(resp)
   }
 
-  private async fetchWithTimeout(
-    url: string,
-    init: RequestInit,
-  ): Promise<Response> {
+  private async fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), this.timeout)
     try {

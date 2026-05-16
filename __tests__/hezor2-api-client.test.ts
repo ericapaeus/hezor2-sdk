@@ -8,7 +8,7 @@ describe('Hezor2APIClient', () => {
 
   beforeEach(() => {
     client = new Hezor2APIClient({
-      baseUrl: 'http://localhost:8000',
+      baseUrl: 'http://localhost:8000/api/v1',
       apiKey: 'test-key',
     })
     fetchSpy = vi.fn()
@@ -39,7 +39,7 @@ describe('Hezor2APIClient', () => {
     expect(fetchSpy).toHaveBeenCalledOnce()
 
     const [url, options] = fetchSpy.mock.calls[0]!
-    expect(url).toBe('http://localhost:8000/webhook/')
+    expect(url).toBe('http://localhost:8000/api/v1/webhook/')
     expect(options.method).toBe('POST')
     expect(JSON.parse(options.body)).toEqual({
       action: 'generate_report_id',

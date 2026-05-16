@@ -129,7 +129,7 @@ describe('BaseAPIClient onSubscriptionRequired (402 interception)', () => {
       }),
     )
     const client = new BaseAPIClient({
-      baseUrl: 'http://x',
+      baseUrl: 'http://x/api/v1',
       onSubscriptionRequired: onSub,
     })
     const resp = await client.get('/anything', { skipAuth: true })
@@ -148,7 +148,7 @@ describe('BaseAPIClient onSubscriptionRequired (402 interception)', () => {
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response('{}', { status: 200 }))
     const client = new BaseAPIClient({
-      baseUrl: 'http://x',
+      baseUrl: 'http://x/api/v1',
       onSubscriptionRequired: onSub,
     })
     await client.get('/ok', { skipAuth: true })
@@ -162,7 +162,7 @@ describe('BaseAPIClient onSubscriptionRequired (402 interception)', () => {
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response('not json', { status: 402 }))
     const client = new BaseAPIClient({
-      baseUrl: 'http://x',
+      baseUrl: 'http://x/api/v1',
       onSubscriptionRequired: onSub,
     })
     await client.post('/x', { json: {}, skipAuth: true })
@@ -177,7 +177,7 @@ describe('BaseAPIClient onSubscriptionRequired (402 interception)', () => {
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response('{}', { status: 402 }))
     const client = new BaseAPIClient({
-      baseUrl: 'http://x',
+      baseUrl: 'http://x/api/v1',
       onSubscriptionRequired: () => {
         throw new Error('hook failure')
       },
@@ -190,7 +190,7 @@ describe('BaseAPIClient onSubscriptionRequired (402 interception)', () => {
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response('{}', { status: 402 }))
-    const client = new BaseAPIClient({ baseUrl: 'http://x' })
+    const client = new BaseAPIClient({ baseUrl: 'http://x/api/v1' })
     const resp = await client.put('/x', { json: {}, skipAuth: true })
     expect(resp.status).toBe(402)
     fetchSpy.mockRestore()
@@ -199,7 +199,7 @@ describe('BaseAPIClient onSubscriptionRequired (402 interception)', () => {
   it('intercepts 402 across all HTTP methods', async () => {
     const onSub = vi.fn()
     const client = new BaseAPIClient({
-      baseUrl: 'http://x',
+      baseUrl: 'http://x/api/v1',
       onSubscriptionRequired: onSub,
     })
     const fetchSpy = vi.spyOn(globalThis, 'fetch')

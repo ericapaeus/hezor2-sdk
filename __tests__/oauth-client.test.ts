@@ -11,7 +11,7 @@ import {
   type OAuthTokenResponse,
 } from '@hezor/hezor2-sdk'
 
-const BASE_URL = 'http://hezor2.test'
+const BASE_URL = 'http://hezor2.test/api/v1'
 const CLIENT_ID = 'test-client'
 
 function makeJsonResponse(body: unknown, init?: ResponseInit): Response {

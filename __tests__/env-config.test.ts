@@ -4,7 +4,7 @@ import { loadEnv } from '@hezor/hezor2-sdk'
 describe('loadEnv', () => {
   it('should return default config when no env vars set', () => {
     const config = loadEnv()
-    expect(config.hezor2ApiBaseUrl).toBe('http://localhost:8000')
+    expect(config.hezor2ApiBaseUrl).toBe('http://localhost:8000/api/v1')
     expect(config.hezor2ApiKey).toBe('test-api-key')
     expect(config.hezor2HeaderPkFilepath).toBeUndefined()
     expect(config.hezor2HeaderPkPassword).toBeUndefined()

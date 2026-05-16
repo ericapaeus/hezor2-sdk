@@ -26,7 +26,7 @@
  *
  * 环境变量 (.env)
  * --------------
- *   HEZOR2_API_BASE_URL    后端地址
+ *   HEZOR2_API_BASE_URL    后端地址，必须含 /api/v1（默认 http://localhost:8000/api/v1）
  *   OAUTH_CLIENT_ID        Casdoor Application.client_id（必填）
  *   OAUTH_DEVICE_ID        设备唯一指纹（可选；默认 `demo-${hostname}-${pid}`）
  *   OAUTH_SCOPE            空格分隔 scope，可选

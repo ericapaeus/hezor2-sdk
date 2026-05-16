@@ -8,7 +8,13 @@
 import dotenv from 'dotenv'
 
 export interface Hezor2EnvConfig {
-  /** API base URL */
+  /**
+   * API base URL — **必须包含 `/api/v1` 前缀**，例如 `https://hezor.ai/api/v1`。
+   *
+   * SDK 运行时所有路径都按 `${baseUrl}${path}` 拼接，且 `path` 为不含 `/api/v1`
+   * 的相对路径（如 `/oauth/authorize`、`/webhook/`、`/health`）。若 baseUrl
+   * 漏掉 `/api/v1`，所有请求会 404。
+   */
   hezor2ApiBaseUrl: string
   /** API key for authentication */
   hezor2ApiKey: string
@@ -47,7 +53,7 @@ export function loadEnv(
       finalOverrides?.hezor2ApiBaseUrl ??
       process.env['HEZOR2_API_BASE_URL'] ??
       envFileValues['HEZOR2_API_BASE_URL'] ??
-      'http://localhost:8000',
+      'http://localhost:8000/api/v1',
     hezor2ApiKey:
       finalOverrides?.hezor2ApiKey ??
       process.env['HEZOR2_API_KEY'] ??
