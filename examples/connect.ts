@@ -10,7 +10,7 @@
  *   npx tsx examples/connect.ts --list # 列出可用
  *
  * 环境变量 (.env):
- *   HEZOR2_API_BASE_URL    — API 后端地址
+ *   HEZOR2_API_BASE_URL    — API 后端地址，必须含 /api/v1（如 https://hezor.ai/api/v1）
  *   HEZOR2_API_KEY         — API Key
  *   HEZOR2_APP_NAME        — 应用名称（Casdoor 中注册的 app name）
  *   HEZOR2_HEADER_PK_FILEPATH — Ed25519 私钥文件路径

@@ -42,7 +42,8 @@ console.log(greet('Alice'))  // 'Hello from @hezor/hezor2-sdk, Alice!'
 import { OAuthClient, generatePKCEPair, generateState } from '@hezor/hezor2-sdk'
 
 const client = new OAuthClient({
-  baseUrl: 'https://hezor.example.com',
+  // baseUrl 必须包含 `/api/v1` 前缀；SDK 所有路径按 `${baseUrl}${path}` 拼接
+  baseUrl: 'https://hezor.example.com/api/v1',
   clientId: 'your-client-id',
   redirectUri: 'https://your-app.example.com/callback',
 })
@@ -75,7 +76,7 @@ await client.revokeToken(refreshed.refresh_token!, 'refresh_token')
 import { OAuthClient } from '@hezor/hezor2-sdk'
 
 const client = new OAuthClient({
-  baseUrl: 'https://hezor.example.com',
+  baseUrl: 'https://hezor.example.com/api/v1',
   clientId: 'your-device-client-id',
 })
 

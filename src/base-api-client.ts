@@ -23,6 +23,12 @@ const DEFAULT_META_INFO: MetaInfoData = {
 }
 
 export interface BaseAPIClientOptions {
+  /**
+   * hezor2 API base URL，**必须包含 `/api/v1` 前缀**（例如
+   * `https://hezor.ai/api/v1` 或 `http://localhost:8000/api/v1`，不含末尾 `/`）。
+   * 客户端按 `${baseUrl}${path}` 拼接，`path` 形如 `/webhook/`、`/health` 等
+   * 不带 `/api/v1` 的相对路径。
+   */
   baseUrl: string
   timeout?: number | undefined
   apiKey?: string | undefined

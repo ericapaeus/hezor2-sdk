@@ -75,7 +75,11 @@ export interface PKCEPair {
 
 /** OAuth 客户端构造参数。 */
 export interface OAuthClientOptions {
-  /** hezor2 API base URL，例如 `http://localhost:8000`（不含末尾 `/`）。 */
+  /**
+   * hezor2 API base URL，**必须包含 `/api/v1` 前缀**（例如
+   * `https://hezor.ai/api/v1` 或 `http://localhost:8000/api/v1`，不含末尾 `/`）。
+   * SDK 内部按 `${baseUrl}/oauth/authorize` 等方式拼接，不会再补 `/api/v1`。
+   */
   baseUrl: string
   /** 当前应用的 client_id（Casdoor Application.client_id）。 */
   clientId: string
