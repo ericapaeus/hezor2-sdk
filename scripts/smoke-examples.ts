@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
+const tsxBin = resolve(root, 'node_modules/.bin/tsx')
 
 interface Scenario {
   label: string
@@ -64,8 +65,8 @@ console.log()
 for (const scenario of scenarios) {
   const filePath = resolve(root, scenario.file)
   const result = spawnSync(
-    'node',
-    ['--import', 'tsx/esm', filePath, ...(scenario.args ?? [])],
+    tsxBin,
+    [filePath, ...(scenario.args ?? [])],
     {
       cwd: root,
       encoding: 'utf-8',

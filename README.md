@@ -121,10 +121,10 @@ pnpm dev
 # 类型检查
 pnpm typecheck
 
-# 运行单元测试
+# 运行完整测试套件（单元 + e2e mock）
 pnpm test
 
-# 运行 OAuth 端到端集成测试（mock-server，CI 内无网络依赖）
+# 仅运行 OAuth e2e mock 测试（pnpm test 的子集，快速调试用）
 pnpm test:e2e
 
 # 运行测试（监听模式）
@@ -147,9 +147,9 @@ pnpm format
 
 | 命令 | 内容 | CI |
 |---|---|---|
-| `pnpm test` | 单元测试（全部，含 e2e mock）| ✅ 每次 push |
-| `pnpm test:e2e` | OAuth 端到端集成测试（mock-server）| ✅ 每次 push |
-| `pnpm test:examples` | examples smoke test（非交互示例）| ✅ 每次 push（需先 build）|
+| `pnpm test` | 单元测试 + e2e mock（全部）| ✅ 每次 push |
+| `pnpm test:e2e` | OAuth e2e mock（`pnpm test` 的子集，局部调试用）| — |
+| `pnpm test:examples` | examples smoke test（非交互示例）| ✅ 每次 push |
 | `e2e:real`（预留） | 真实 hezor2 dev server 跑通全链路 | 手动，仅 release 前 |
 
 > **`e2e:real` 跑法（release 前手动）**：

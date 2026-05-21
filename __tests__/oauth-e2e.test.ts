@@ -198,9 +198,7 @@ describe('E2E: Device Flow 完整链路', () => {
       interval: 5,
     })
 
-    // 第一次 poll 返回 authorization_pending，等 interval 秒后再试
-    await vi.advanceTimersByTimeAsync(5_000)
-    // 第二次 poll 返回成功
+    // poll #1 立即执行 → authorization_pending → sleep 5s → poll #2 → success
     await vi.advanceTimersByTimeAsync(5_000)
 
     const finalToken = await pollPromise
@@ -225,9 +223,8 @@ describe('E2E: Device Flow 完整链路', () => {
       interval: 5,
     })
 
-    // poll #1 立即执行，返回 slow_down，interval 变为 10s
-    await vi.advanceTimersByTimeAsync(10_000) // 触发 10s sleep
-    await vi.advanceTimersByTimeAsync(5_000)  // 刷新 poll #2 后的微任务
+    // poll #1 立即执行 → slow_down → interval 变为 10s → sleep 10s → poll #2 → success
+    await vi.advanceTimersByTimeAsync(10_000)
 
     const token = await pollPromise
     expect(token.access_token).toBe(TOKEN_RESP.access_token)
