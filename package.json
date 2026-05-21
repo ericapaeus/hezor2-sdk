@@ -46,8 +46,10 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,md}\"",
     "test": "vitest run",
+    "test:e2e": "vitest run __tests__/oauth-e2e.test.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:examples": "tsx scripts/smoke-examples.ts",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm clean && pnpm typecheck && pnpm build && pnpm test",
     "release:patch": "bash scripts/release.sh patch",
@@ -63,6 +65,7 @@
     "eslint": "^9.0.0",
     "prettier": "^3.0.0",
     "tsup": "^8.0.0",
+    "tsx": "^4.22.3",
     "typescript": "^5.0.0",
     "vitest": "^3.0.0"
   },

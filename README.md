@@ -121,8 +121,11 @@ pnpm dev
 # 类型检查
 pnpm typecheck
 
-# 运行测试
+# 运行完整测试套件（单元 + e2e mock）
 pnpm test
+
+# 仅运行 OAuth e2e mock 测试（pnpm test 的子集，快速调试用）
+pnpm test:e2e
 
 # 运行测试（监听模式）
 pnpm test:watch
@@ -130,12 +133,29 @@ pnpm test:watch
 # 测试覆盖率
 pnpm test:coverage
 
+# Examples smoke test（验证非交互示例不崩溃）
+pnpm test:examples
+
 # Lint
 pnpm lint
 
 # 格式化
 pnpm format
 ```
+
+### 测试分层说明
+
+| 命令 | 内容 | CI |
+|---|---|---|
+| `pnpm test` | 单元测试 + e2e mock（全部）| ✅ 每次 push |
+| `pnpm test:e2e` | OAuth e2e mock（`pnpm test` 的子集，局部调试用）| — |
+| `pnpm test:examples` | examples smoke test（非交互示例）| ✅ 每次 push |
+| `e2e:real`（预留） | 真实 hezor2 dev server 跑通全链路 | 手动，仅 release 前 |
+
+> **`e2e:real` 跑法（release 前手动）**：
+> 1. `cd deploy && docker compose up -d`（起 hezor2 dev server）
+> 2. 配置 `examples/.env`（`HEZOR2_API_BASE_URL`、`OAUTH_CLIENT_ID` 等）
+> 3. `npx tsx examples/oauth-auth-code.ts` / `npx tsx examples/oauth-device-flow.ts`
 
 ## 发布
 
