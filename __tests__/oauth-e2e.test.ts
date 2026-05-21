@@ -77,11 +77,16 @@ function oauthErrorResp(
   return jsonResp({ detail: { error, error_description: description } }, status)
 }
 
-/** 依次返回 responses 数组中的每个元素；超出后返回 404。 */
+/** 依次返回 responses 数组中的每个元素；超出时抛出错误，防止掩盖意外的额外 fetch 调用。 */
 function sequentialFetch(responses: Response[]): typeof globalThis.fetch {
   let idx = 0
   return vi.fn().mockImplementation(() => {
-    const resp = responses[idx++] ?? new Response('no more responses', { status: 404 })
+    const resp = responses[idx++]
+    if (!resp) {
+      throw new Error(
+        `sequentialFetch: unexpected call #${idx} — only ${responses.length} response(s) configured`,
+      )
+    }
     return Promise.resolve(resp)
   }) as unknown as typeof globalThis.fetch
 }
@@ -202,6 +207,70 @@ describe('E2E: Device Flow 完整链路', () => {
     expect(finalToken.access_token).toBe(TOKEN_RESP.access_token)
 
     expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('slow_down → interval 增加 5s 后重试，最终成功', async () => {
+    const fetchMock = sequentialFetch([
+      jsonResp(DEVICE_CODE_RESP),                      // requestDeviceCode
+      oauthErrorResp(400, 'slow_down', 'too fast'),   // poll #1 → slow_down（interval: 5→10）
+      jsonResp(TOKEN_RESP),                             // poll #2 → success
+    ])
+    const client = newClient(fetchMock)
+
+    await client.requestDeviceCode({ deviceId: 'dev', scope: 'device:bind' })
+
+    const pollPromise = client.pollDeviceToken({
+      deviceCode: DEVICE_CODE_RESP.device_code,
+      expiresIn: 600,
+      interval: 5,
+    })
+
+    // poll #1 立即执行，返回 slow_down，interval 变为 10s
+    await vi.advanceTimersByTimeAsync(10_000) // 触发 10s sleep
+    await vi.advanceTimersByTimeAsync(5_000)  // 刷新 poll #2 后的微任务
+
+    const token = await pollPromise
+    expect(token.access_token).toBe(TOKEN_RESP.access_token)
+    expect(fetchMock).toHaveBeenCalledTimes(3) // requestDeviceCode + poll ×2
+  })
+
+  it('access_denied → OAuthError { code: "access_denied" }（用户在浏览器拒绝）', async () => {
+    const fetchMock = sequentialFetch([
+      oauthErrorResp(400, 'access_denied', 'user denied access'),
+    ])
+    const client = newClient(fetchMock)
+
+    // poll #1 立即执行，返回 access_denied，属于不可重试错误，直接抛出
+    await expect(
+      client.pollDeviceToken({
+        deviceCode: 'dc_denied',
+        expiresIn: 600,
+        interval: 5,
+      }),
+    ).rejects.toMatchObject({ name: 'OAuthError', code: 'access_denied' })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('onPoll 返回 false → polling_aborted（调用方主动中止）', async () => {
+    // onPoll 在每次迭代开始时（fetch 之前）被调用；首次返回 false 即中止，不发任何请求
+    const fetchMock = sequentialFetch([])
+    const client = newClient(fetchMock)
+
+    await expect(
+      client.pollDeviceToken({
+        deviceCode: 'dc_abort',
+        expiresIn: 600,
+        interval: 5,
+        onPoll: () => false,
+      }),
+    ).rejects.toMatchObject({
+      name: 'OAuthError',
+      code: 'polling_aborted',
+      statusCode: 499,
+    })
+
+    expect(fetchMock).toHaveBeenCalledTimes(0)
   })
 })
 
