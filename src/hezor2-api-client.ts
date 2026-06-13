@@ -179,7 +179,10 @@ export class Hezor2APIClient extends BaseAPIClient {
       query,
       top_k: options?.topK ?? 20,
     }
-    const resp = await this.webhookRequest<DatahubSearchToolsResult>('datahub_search_tools', payload)
+    const resp = await this.webhookRequest<DatahubSearchToolsResult>(
+      'datahub_search_tools',
+      payload,
+    )
     return resp.data!
   }
 
