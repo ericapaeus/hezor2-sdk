@@ -249,3 +249,48 @@ export interface PullConfigsResponse {
 export function mergedConfigs(resp: PullConfigsResponse): Record<string, string> {
   return { ...resp.public, ...resp.user }
 }
+
+// ---------------------------------------------------------------------------
+// Silicon Runtime models（对应 hezor2 /silicon/runtimes/* 接口）
+// ---------------------------------------------------------------------------
+
+export interface AutoProvisionRequest {
+  device_id: string
+  hostname?: string
+  os?: string
+  arch?: string
+  runtime_kind?: string
+  vendor?: string
+}
+
+export interface AutoProvisionResponse {
+  runtime_id: string
+  config_key: string
+  app_name: string
+  tunnel_endpoint: string | null
+  tunnel_token: string
+  tunnel_token_expires_at: string | null
+}
+
+export interface SiliconRuntime {
+  /** runtime 唯一 ID（字段名因版本不同可能为 runtime_id 或 id） */
+  runtime_id?: string
+  id?: string
+  app_name?: string
+  tunnel_endpoint?: string | null
+}
+
+export interface RefreshTunnelTokenResponse {
+  runtime_id: string
+  tunnel_token: string
+  expires_at: string | null
+}
+
+// ---------------------------------------------------------------------------
+// LLM chat models（OpenAI-compatible）
+// ---------------------------------------------------------------------------
+
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant'
+  content: string
+}

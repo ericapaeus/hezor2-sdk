@@ -99,3 +99,13 @@ export class ConnectAppMismatchError extends ConnectError {
     this.name = 'ConnectAppMismatchError'
   }
 }
+
+// --- Silicon Runtime ---
+
+/** 同一 device_id 已被其他账号绑定（SILICON_RUNTIME_OWNER_BOUND）。 */
+export class SiliconOwnerBoundError extends HezorError {
+  constructor(detail: string = 'device already bound to another owner') {
+    super({ code: 'SILICON_RUNTIME_OWNER_BOUND', detail, statusCode: 409 })
+    this.name = 'SiliconOwnerBoundError'
+  }
+}

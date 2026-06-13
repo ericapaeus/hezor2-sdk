@@ -28,6 +28,14 @@ import type {
   WechatPollOpenidResponse,
 } from './types.js'
 
+/** POST /webhook/user/ 所需的最小请求选项（userToken 作 per-call 参数）。 */
+interface WebhookUserOptions {
+  /** 用户 OAuth access_token，作为 Bearer；调用方负责续期。 */
+  userToken: string
+  /** per-call 超时（ms），默认使用实例级 timeout。 */
+  timeout?: number
+}
+
 export interface Hezor2APIClientOptions extends Omit<BaseAPIClientOptions, 'baseUrl'> {
   baseUrl?: string | undefined
 }
@@ -56,6 +64,33 @@ export class Hezor2APIClient extends BaseAPIClient {
       throw new Error(`Webhook HTTP error: ${response.status} ${response.statusText}`)
     }
 
+    const resp = (await response.json()) as WebhookResponse<T>
+    if (resp.status === 'error') {
+      throw new Error(`Webhook action '${action}' failed: ${resp.message || 'unknown error'}`)
+    }
+    return resp
+  }
+
+  /**
+   * Send a request to the user-authenticated webhook endpoint (/webhook/user/).
+   * Authorization: Bearer <userToken>（用户 OAuth access_token，由调用方动态传入）。
+   * @throws {Error} HTTP 错误或业务 status="error"
+   */
+  private async webhookUserRequest<T = unknown>(
+    action: string,
+    payload: Record<string, unknown>,
+    options: WebhookUserOptions,
+  ): Promise<WebhookResponse<T>> {
+    const body = { action, payload }
+    const response = await this.post('/webhook/user/', {
+      json: body,
+      headers: { Authorization: `Bearer ${options.userToken}` },
+      skipAuth: true,
+      ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
+    })
+    if (!response.ok) {
+      throw new Error(`Webhook user HTTP error: ${response.status} ${response.statusText}`)
+    }
     const resp = (await response.json()) as WebhookResponse<T>
     if (resp.status === 'error') {
       throw new Error(`Webhook action '${action}' failed: ${resp.message || 'unknown error'}`)
@@ -229,7 +264,89 @@ export class Hezor2APIClient extends BaseAPIClient {
     return resp.data!
   }
 
-  /** Pull configs from configuration center. */
+  // ── 用户 token 鉴权 webhook 方法（/webhook/user/）─────────────────────────
+  //
+  // 与上方三个方法功能相同，但走 /webhook/user/ 端点（JWT 用户鉴权）。
+  // userToken 作 per-call 参数，不固化在构造函数，便于外部在每次调用时注入
+  // 最新续期后的 access_token。
+
+  /**
+   * 通过用户 token 调用 data_retrieve webhook（/webhook/user/）。
+   *
+   * @param query     - 自然语言数据查询语句
+   * @param options.topK      - 工具搜索数量上限（默认 20）
+   * @param options.userToken - 用户 OAuth access_token（必填）
+   */
+  async dataRetrieveAsUser(
+    query: string,
+    options: { topK?: number; userToken: string },
+  ): Promise<DataRetrieveResult> {
+    const resp = await this.webhookUserRequest<DataRetrieveResult>(
+      'data_retrieve',
+      { query, top_k: options.topK ?? 20 },
+      { userToken: options.userToken },
+    )
+    return resp.data!
+  }
+
+  /**
+   * 通过用户 token 语义搜索 DataHub 工具（/webhook/user/）。
+   *
+   * @param query     - 工具搜索查询语句
+   * @param options.topK      - 返回工具数量上限（默认 20）
+   * @param options.userToken - 用户 OAuth access_token（必填）
+   */
+  async datahubSearchToolsAsUser(
+    query: string,
+    options: { topK?: number; userToken: string },
+  ): Promise<DatahubSearchToolsResult> {
+    const resp = await this.webhookUserRequest<DatahubSearchToolsResult>(
+      'datahub_search_tools',
+      { query, top_k: options.topK ?? 20 },
+      { userToken: options.userToken },
+    )
+    return resp.data!
+  }
+
+  /**
+   * 通过用户 token 执行 DataHub 工具（/webhook/user/）。
+   *
+   * 与 `datahubExecuteTool` 语义相同：工具执行失败（success=false）时
+   * **不抛出**，返回 ExecuteResponse 由调用方检查 error / desc。
+   *
+   * @param toolName  - 工具名称
+   * @param args      - 工具执行参数
+   * @param options.userToken - 用户 OAuth access_token（必填）
+   */
+  async datahubExecuteToolAsUser(
+    toolName: string,
+    args: Record<string, unknown>,
+    options: { userToken: string },
+  ): Promise<ExecuteResponse> {
+    const body = { action: 'datahub_execute_tool', payload: { tool_name: toolName, args } }
+    const response = await this.post('/webhook/user/', {
+      json: body,
+      headers: { Authorization: `Bearer ${options.userToken}` },
+      skipAuth: true,
+    })
+    if (!response.ok) {
+      throw new Error(`Webhook user HTTP error: ${response.status} ${response.statusText}`)
+    }
+    const resp = (await response.json()) as WebhookResponse<ExecuteResponse>
+    // status=error → 工具执行失败，不抛出，透传给调用方
+    if (resp.status === 'error') {
+      return (
+        resp.data ?? {
+          success: false,
+          data: {},
+          count: 0,
+          error: resp.message ?? 'Tool execution failed',
+          desc: '',
+        }
+      )
+    }
+    return resp.data!
+  }
   async pullConfigs(options?: {
     keys?: string[]
     globalBaseUrl?: string
