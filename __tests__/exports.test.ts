@@ -6,6 +6,9 @@ import {
   Hezor2APIClient,
   BaseAPIClient,
   OAuthClient,
+  SiliconRuntimeClient,
+  HezorLLMClient,
+  SiliconOwnerBoundError,
   generatePKCEPair,
   generateState,
   DEVICE_CODE_GRANT_TYPE,
@@ -37,6 +40,14 @@ describe('hezor2-sdk exports', () => {
   it('should export API client classes', () => {
     expect(Hezor2APIClient).toBeDefined()
     expect(BaseAPIClient).toBeDefined()
+  })
+
+  it('should export SiliconRuntimeClient and HezorLLMClient', () => {
+    expect(SiliconRuntimeClient).toBeDefined()
+    expect(typeof SiliconRuntimeClient).toBe('function')
+    expect(HezorLLMClient).toBeDefined()
+    expect(typeof HezorLLMClient).toBe('function')
+    expect(SiliconOwnerBoundError).toBeDefined()
   })
 
   it('should export OAuthClient and PKCE helpers', () => {

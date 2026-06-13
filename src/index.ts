@@ -121,4 +121,11 @@ export type {
   // App binding
   AppCertInfo,
   UserAppBindingInfo,
+  // Silicon Runtime
+  AutoProvisionRequest,
+  AutoProvisionResponse,
+  SiliconRuntime,
+  RefreshTunnelTokenResponse,
+  // LLM
+  ChatMessage,
 } from './types.js'
