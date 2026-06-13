@@ -467,67 +467,6 @@ reports
     },
   )
 
-// ── Knowledge ────────────────────────────────────────────────────────────
-
-const knowledge = program.command('knowledge').description('知识库检索')
-
-knowledge
-  .command('search <query> <collection>')
-  .description('在指定集合中搜索知识')
-  .option('-k, --top-k <number>', '返回数量', '5')
-  .option('-t, --threshold <number>', '分数阈值', '0.5')
-  .option('-m, --mode <mode>', '搜索模式 (semantic, hybrid)', 'semantic')
-  .option('--vector-weight <number>', '向量权重', '0.7')
-  .option('--text-weight <number>', '文本权重', '0.3')
-  .option('--entity-type <type>', '实体类型过滤')
-  .option('--doc-id <id>', '文档 ID 过滤')
-  .option('--raw', '输出原始 JSON')
-  .action(
-    async (
-      query: string,
-      collection: string,
-      opts: {
-        topK: string
-        threshold: string
-        mode: string
-        vectorWeight: string
-        textWeight: string
-        entityType?: string
-        docId?: string
-        raw?: boolean
-      },
-    ) => {
-      const profile = getProfile()
-      const sdk = createSDK(profile)
-      const result = await sdk.knowledgeSearch(query, collection, {
-        topK: parseInt(opts.topK, 10),
-        scoreThreshold: parseFloat(opts.threshold),
-        searchMode: opts.mode as 'semantic' | 'hybrid',
-        vectorWeight: parseFloat(opts.vectorWeight),
-        textWeight: parseFloat(opts.textWeight),
-        ...(opts.entityType ? { entityType: opts.entityType } : {}),
-        ...(opts.docId ? { docId: opts.docId } : {}),
-      })
-      outputResult(result, opts.raw ?? false)
-    },
-  )
-
-knowledge
-  .command('retrieve <query>')
-  .description('跨集合检索知识')
-  .option('-k, --top-k <number>', '返回数量', '3')
-  .option('-t, --threshold <number>', '分数阈值', '0.5')
-  .option('--raw', '输出原始 JSON')
-  .action(async (query: string, opts: { topK: string; threshold: string; raw?: boolean }) => {
-    const profile = getProfile()
-    const sdk = createSDK(profile)
-    const result = await sdk.knowledgeRetrieve(query, {
-      topK: parseInt(opts.topK, 10),
-      scoreThreshold: parseFloat(opts.threshold),
-    })
-    outputResult(result, opts.raw ?? false)
-  })
-
 // ── Data ─────────────────────────────────────────────────────────────────
 
 const data = program.command('data').description('数据检索')
@@ -543,59 +482,6 @@ data
     const result = await sdk.dataRetrieve(query, { topK: parseInt(opts.topK, 10) })
     outputResult(result, opts.raw ?? false)
   })
-
-// ── Graph ────────────────────────────────────────────────────────────────
-
-const graph = program.command('graph').description('知识图谱查询')
-
-graph
-  .command('query <queryType>')
-  .description('执行知识图谱查询')
-  .option('-q, --keyword <keyword>', '搜索关键词')
-  .option('-e, --entity <name>', '实体名称')
-  .option('--entity-type <type>', '实体类型')
-  .option('--rel-type <type>', '关系类型')
-  .option('-d, --direction <dir>', '方向 (both, in, out)', 'both')
-  .option('--target <name>', '目标实体名称')
-  .option('--max-depth <number>', '最大遍历深度', '2')
-  .option('--max-paths <number>', '最大路径数', '3')
-  .option('--community-id <id>', '社区 ID')
-  .option('-n, --limit <number>', '结果数量限制', '20')
-  .option('--raw', '输出原始 JSON')
-  .action(
-    async (
-      queryType: string,
-      opts: {
-        keyword?: string
-        entity?: string
-        entityType?: string
-        relType?: string
-        direction: string
-        target?: string
-        maxDepth: string
-        maxPaths: string
-        communityId?: string
-        limit: string
-        raw?: boolean
-      },
-    ) => {
-      const profile = getProfile()
-      const sdk = createSDK(profile)
-      const result = await sdk.knowledgeGraphQuery(queryType, {
-        ...(opts.keyword ? { keyword: opts.keyword } : {}),
-        ...(opts.entity ? { entityName: opts.entity } : {}),
-        ...(opts.entityType ? { entityType: opts.entityType } : {}),
-        ...(opts.relType ? { relationshipType: opts.relType } : {}),
-        direction: opts.direction as 'in' | 'out' | 'both',
-        ...(opts.target ? { targetName: opts.target } : {}),
-        maxDepth: parseInt(opts.maxDepth, 10),
-        maxPaths: parseInt(opts.maxPaths, 10),
-        ...(opts.communityId ? { communityId: opts.communityId } : {}),
-        limit: parseInt(opts.limit, 10),
-      })
-      outputResult(result, opts.raw ?? false)
-    },
-  )
 
 // ── Config ───────────────────────────────────────────────────────────────
 

@@ -18,8 +18,6 @@ import type {
   CreationGenerateResult,
   CreationGenerateResultV2,
   DataRetrieveResult,
-  GraphQueryResult,
-  KnowledgeSearchResult,
   PublicReportsResponseData,
   PublishCreationResponseData,
   PullConfigsResponse,
@@ -174,65 +172,9 @@ export class Hezor2SDK {
     return this.client.webhookHelp(action)
   }
 
-  /** Execute knowledge retrieval. */
-  async knowledgeRetrieve(
-    query: string,
-    options?: { topK?: number; scoreThreshold?: number },
-  ): Promise<KnowledgeSearchResult> {
-    return this.client.knowledgeRetrieve(query, options)
-  }
-
   /** Execute data retrieval. */
   async dataRetrieve(query: string, options?: { topK?: number }): Promise<DataRetrieveResult> {
     return this.client.dataRetrieve(query, options)
-  }
-
-  /**
-   * Execute single-collection knowledge search.
-   *
-   * Targets a specific collection with collection-specific filter parameters.
-   */
-  async knowledgeSearch(
-    query: string,
-    collection: string,
-    options?: {
-      topK?: number
-      scoreThreshold?: number
-      metadataFilter?: Record<string, unknown>
-      dateRange?: [string, string]
-      searchMode?: 'semantic' | 'hybrid'
-      vectorWeight?: number
-      textWeight?: number
-      entityType?: string
-      docId?: string
-    },
-  ): Promise<KnowledgeSearchResult> {
-    return this.client.knowledgeSearch(query, collection, options)
-  }
-
-  /**
-   * Execute knowledge graph topology query.
-   *
-   * Supports: graph_statistics, entity_search, entity_relationships,
-   * entity_subgraph, find_paths, entity_co_occurrence,
-   * entity_communities, community_subgraph, related_communities.
-   */
-  async knowledgeGraphQuery(
-    queryType: string,
-    options?: {
-      keyword?: string
-      entityName?: string
-      entityType?: string
-      relationshipType?: string
-      direction?: 'in' | 'out' | 'both'
-      targetName?: string
-      maxDepth?: number
-      maxPaths?: number
-      communityId?: string
-      limit?: number
-    },
-  ): Promise<GraphQueryResult> {
-    return this.client.knowledgeGraphQuery(queryType, options)
   }
 
   /** Pull configs from configuration center. */
