@@ -53,7 +53,7 @@ export function loadEnv(
       finalOverrides?.hezor2ApiBaseUrl ??
       process.env['HEZOR2_API_BASE_URL'] ??
       envFileValues['HEZOR2_API_BASE_URL'] ??
-      'http://localhost:8000/api/v1',
+      'https://hezor.ai/api/v1',
     hezor2ApiKey:
       finalOverrides?.hezor2ApiKey ??
       process.env['HEZOR2_API_KEY'] ??

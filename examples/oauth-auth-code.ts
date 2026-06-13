@@ -26,7 +26,7 @@
  *
  * 环境变量 (.env)
  * --------------
- *   HEZOR2_API_BASE_URL    后端地址，必须含 /api/v1（默认 http://localhost:8000/api/v1）
+ *   HEZOR2_API_BASE_URL    后端地址，必须含 /api/v1（默认 https://hezor.ai/api/v1）
  *   OAUTH_CLIENT_ID        Casdoor Application.client_id（必填）
  *   OAUTH_REDIRECT_URI     回调 URL，需在 application 的 redirect_uris 白名单内
  *   OAUTH_SCOPE            空格分隔 scope（可选）
