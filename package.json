@@ -54,7 +54,8 @@
     "prepublishOnly": "pnpm clean && pnpm typecheck && pnpm build && pnpm test",
     "release:patch": "bash scripts/release.sh patch",
     "release:minor": "bash scripts/release.sh minor",
-    "release:major": "bash scripts/release.sh major"
+    "release:major": "bash scripts/release.sh major",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
@@ -63,6 +64,8 @@
     "@typescript-eslint/parser": "^8.0.0",
     "@vitest/coverage-v8": "^3.0.0",
     "eslint": "^9.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
     "prettier": "^3.0.0",
     "tsup": "^8.0.0",
     "tsx": "^4.22.3",
@@ -80,5 +83,17 @@
     "commander": "^13.0.0",
     "dotenv": "^17.3.1",
     "jose": "^6.2.2"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "src/**/*.{json,md}": [
+      "prettier --write"
+    ],
+    "examples/**/*.ts": [
+      "prettier --write"
+    ]
   }
 }
