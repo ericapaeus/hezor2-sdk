@@ -27,7 +27,9 @@ import type {
 } from './types.js'
 
 export interface Hezor2SDKOptions {
-  /** API base URL (default: `https://hezor.ai/api/v1`; must include `/api/v1` prefix) */
+  /** API base URL — must include `/api/v1` prefix (e.g. `https://hezor.ai/api/v1`).
+   *  Defaults to `https://hezor.ai/api/v1` (or `HEZOR2_API_BASE_URL` env var if set).
+   *  Override for private/self-hosted deployments. */
   baseUrl?: string | undefined
   /** Request timeout in milliseconds (default: 120000) */
   timeout?: number | undefined
