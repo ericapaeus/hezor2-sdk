@@ -142,7 +142,9 @@ export interface ToolParameterSchema {
   type: string
   desc: string
   required?: string[]
-  props?: Record<string, unknown>
+  props?: Record<string, ToolParameterSchema>
+  items?: ToolParameterSchema
+  enum?: unknown[]
 }
 
 /** DataHub 工具元信息（对应 Python ToolSchema）。 */

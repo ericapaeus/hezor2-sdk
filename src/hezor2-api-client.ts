@@ -146,7 +146,13 @@ export class Hezor2APIClient extends BaseAPIClient {
     return (await response.json()) as WebhookActionHelp
   }
 
-  /** Execute data_retrieve webhook. */
+  /**
+   * Execute data_retrieve webhook.
+   *
+   * @remarks **Breaking change (v1.6.x → v1.7.x)**: default `topK` changed
+   * from `1` to `20` to align with the backend DataFetchFlowV2 default.
+   * Callers that rely on the old default must pass `{ topK: 1 }` explicitly.
+   */
   async dataRetrieve(query: string, options?: { topK?: number }): Promise<DataRetrieveResult> {
     const payload: Record<string, unknown> = {
       query,
@@ -183,6 +189,10 @@ export class Hezor2APIClient extends BaseAPIClient {
    * Calls `datahub_execute_tool` webhook action. Use `datahubSearchTools` to
    * discover available tools and their parameter schemas.
    *
+   * Unlike other webhook methods, this **does not throw** when the tool itself
+   * fails (i.e. `success=false`). It returns the `ExecuteResponse` so callers
+   * can inspect `error` and `desc`. HTTP errors and auth failures still throw.
+   *
    * @param toolName - Tool name (from `datahubSearchTools`)
    * @param args - Tool execution arguments (key-value pairs)
    */
@@ -194,7 +204,25 @@ export class Hezor2APIClient extends BaseAPIClient {
       tool_name: toolName,
       args: args ?? {},
     }
-    const resp = await this.webhookRequest<ExecuteResponse>('datahub_execute_tool', payload)
+    const body = { action: 'datahub_execute_tool', payload }
+    const response = await this.post('/webhook/', { json: body })
+    if (!response.ok) {
+      throw new Error(`Webhook HTTP error: ${response.status} ${response.statusText}`)
+    }
+    const resp = (await response.json()) as WebhookResponse<ExecuteResponse>
+    // status=error means the tool execution failed (not an HTTP error);
+    // return the ExecuteResponse so callers can inspect .error / .desc.
+    if (resp.status === 'error') {
+      return (
+        resp.data ?? {
+          success: false,
+          data: {},
+          count: 0,
+          error: resp.message ?? 'Tool execution failed',
+          desc: '',
+        }
+      )
+    }
     return resp.data!
   }
 

@@ -180,7 +180,12 @@ export class Hezor2SDK {
     return this.client.webhookHelp(action)
   }
 
-  /** Execute data retrieval. */
+  /**
+   * Execute data retrieval.
+   *
+   * @remarks **Breaking change (v1.6.x → v1.7.x)**: default `topK` changed
+   * from `1` to `20`. Pass `{ topK: 1 }` explicitly to restore the old behaviour.
+   */
   async dataRetrieve(query: string, options?: { topK?: number }): Promise<DataRetrieveResult> {
     return this.client.dataRetrieve(query, options)
   }
@@ -200,6 +205,10 @@ export class Hezor2SDK {
 
   /**
    * Execute a specific DataHub tool directly.
+   *
+   * Does **not** throw when the tool itself fails (`success=false`).
+   * Returns the `ExecuteResponse` so callers can inspect `error` / `desc`.
+   * HTTP-level errors still throw.
    *
    * @param toolName - Tool name (from `datahubSearchTools`)
    * @param args - Tool execution arguments
