@@ -260,7 +260,7 @@ describe('Hezor2APIClient', () => {
     expect(result.query).toBe('test query')
   })
 
-  it('should use default top_k=1 for data_retrieve', async () => {
+  it('should use default top_k=20 for data_retrieve', async () => {
     const mockResponse: WebhookResponse = {
       action: 'data_retrieve',
       status: 'ok',
@@ -273,7 +273,7 @@ describe('Hezor2APIClient', () => {
 
     await client.dataRetrieve('q')
     const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
-    expect(body.payload.top_k).toBe(1)
+    expect(body.payload.top_k).toBe(20)
   })
 
   it('should pass custom top_k for data_retrieve', async () => {
