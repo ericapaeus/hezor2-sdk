@@ -81,3 +81,4 @@ const _defaultConfig = loadEnv()
 
 export const DEFAULT_API_BASE_URL = _defaultConfig.hezor2ApiBaseUrl
 export const DEFAULT_API_KEY = _defaultConfig.hezor2ApiKey
+export const DEFAULT_APP_NAME = _defaultConfig.hezor2AppName ?? 'universal_app'

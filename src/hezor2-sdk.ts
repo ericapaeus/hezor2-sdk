@@ -8,7 +8,7 @@
  * scoped usage.
  */
 
-import { DEFAULT_API_BASE_URL, DEFAULT_API_KEY } from './env-config.js'
+import { DEFAULT_API_BASE_URL, DEFAULT_API_KEY, DEFAULT_APP_NAME } from './env-config.js'
 import { Hezor2APIClient } from './hezor2-api-client.js'
 import type { MetaInfoData } from './meta-info.js'
 import type {
@@ -64,7 +64,7 @@ export class Hezor2SDK {
       privateKeyPem: options.privateKeyPem,
       password: options.password,
       metaInfoExpiresIn: options.metaInfoExpiresIn,
-      appName: options.appName,
+      appName: options.appName ?? DEFAULT_APP_NAME,
     })
   }
 
