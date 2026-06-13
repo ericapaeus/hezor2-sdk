@@ -38,7 +38,7 @@ function createSdk(): Hezor2SDK {
 async function basicRetrieve() {
   const query = '火星店的销售的数据'
   console.log(`  query: ${query}`)
-  console.log('  topK:  1 (default)\n')
+  console.log('  topK:  20 (default)\n')
 
   try {
     const sdk = createSdk()
