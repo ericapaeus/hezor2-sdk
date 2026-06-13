@@ -13,7 +13,9 @@ import type {
   ConnectVerifyResponse,
   CreationGenerateResult,
   CreationGenerateResultV2,
+  DatahubSearchToolsResult,
   DataRetrieveResult,
+  ExecuteResponse,
   GenerateReportIdResponseData,
   PublicReportsResponseData,
   PublishCreationResponseData,
@@ -144,13 +146,86 @@ export class Hezor2APIClient extends BaseAPIClient {
     return (await response.json()) as WebhookActionHelp
   }
 
-  /** Execute data_retrieve webhook. */
+  /**
+   * Execute data_retrieve webhook.
+   *
+   * @remarks **Breaking change (v1.6.x → v1.7.x)**: default `topK` changed
+   * from `1` to `20` to align with the backend DataFetchFlowV2 default.
+   * Callers that rely on the old default must pass `{ topK: 1 }` explicitly.
+   */
   async dataRetrieve(query: string, options?: { topK?: number }): Promise<DataRetrieveResult> {
     const payload: Record<string, unknown> = {
       query,
-      top_k: options?.topK ?? 1,
+      top_k: options?.topK ?? 20,
     }
     const resp = await this.webhookRequest<DataRetrieveResult>('data_retrieve', payload)
+    return resp.data!
+  }
+
+  /**
+   * Search DataHub tools by semantic query.
+   *
+   * Calls `datahub_search_tools` webhook action. Returns matching tools with
+   * their names, descriptions and parameter schemas.
+   *
+   * @param query - Natural-language search query
+   * @param options.topK - Max number of tools to return (default: 20)
+   */
+  async datahubSearchTools(
+    query: string,
+    options?: { topK?: number },
+  ): Promise<DatahubSearchToolsResult> {
+    const payload: Record<string, unknown> = {
+      query,
+      top_k: options?.topK ?? 20,
+    }
+    const resp = await this.webhookRequest<DatahubSearchToolsResult>(
+      'datahub_search_tools',
+      payload,
+    )
+    return resp.data!
+  }
+
+  /**
+   * Execute a specific DataHub tool directly.
+   *
+   * Calls `datahub_execute_tool` webhook action. Use `datahubSearchTools` to
+   * discover available tools and their parameter schemas.
+   *
+   * Unlike other webhook methods, this **does not throw** when the tool itself
+   * fails (i.e. `success=false`). It returns the `ExecuteResponse` so callers
+   * can inspect `error` and `desc`. HTTP errors and auth failures still throw.
+   *
+   * @param toolName - Tool name (from `datahubSearchTools`)
+   * @param args - Tool execution arguments (key-value pairs)
+   */
+  async datahubExecuteTool(
+    toolName: string,
+    args?: Record<string, unknown>,
+  ): Promise<ExecuteResponse> {
+    const payload: Record<string, unknown> = {
+      tool_name: toolName,
+      args: args ?? {},
+    }
+    const body = { action: 'datahub_execute_tool', payload }
+    const response = await this.post('/webhook/', { json: body })
+    if (!response.ok) {
+      throw new Error(`Webhook HTTP error: ${response.status} ${response.statusText}`)
+    }
+    const resp = (await response.json()) as WebhookResponse<ExecuteResponse>
+    // status=error means the tool execution failed (not an HTTP error);
+    // return the ExecuteResponse so callers can inspect .error / .desc.
+    if (resp.status === 'error') {
+      return (
+        resp.data ?? {
+          success: false,
+          data: {},
+          count: 0,
+          error: resp.message ?? 'Tool execution failed',
+          desc: '',
+        }
+      )
+    }
     return resp.data!
   }
 

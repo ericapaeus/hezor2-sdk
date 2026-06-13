@@ -8,7 +8,7 @@
  * scoped usage.
  */
 
-import { DEFAULT_API_BASE_URL, DEFAULT_API_KEY } from './env-config.js'
+import { DEFAULT_API_BASE_URL, DEFAULT_API_KEY, DEFAULT_APP_NAME } from './env-config.js'
 import { Hezor2APIClient } from './hezor2-api-client.js'
 import type { MetaInfoData } from './meta-info.js'
 import type {
@@ -17,7 +17,9 @@ import type {
   ConnectVerifyResponse,
   CreationGenerateResult,
   CreationGenerateResultV2,
+  DatahubSearchToolsResult,
   DataRetrieveResult,
+  ExecuteResponse,
   PublicReportsResponseData,
   PublishCreationResponseData,
   PullConfigsResponse,
@@ -62,7 +64,7 @@ export class Hezor2SDK {
       privateKeyPem: options.privateKeyPem,
       password: options.password,
       metaInfoExpiresIn: options.metaInfoExpiresIn,
-      appName: options.appName,
+      appName: options.appName ?? DEFAULT_APP_NAME,
     })
   }
 
@@ -178,9 +180,44 @@ export class Hezor2SDK {
     return this.client.webhookHelp(action)
   }
 
-  /** Execute data retrieval. */
+  /**
+   * Execute data retrieval.
+   *
+   * @remarks **Breaking change (v1.6.x → v1.7.x)**: default `topK` changed
+   * from `1` to `20`. Pass `{ topK: 1 }` explicitly to restore the old behaviour.
+   */
   async dataRetrieve(query: string, options?: { topK?: number }): Promise<DataRetrieveResult> {
     return this.client.dataRetrieve(query, options)
+  }
+
+  /**
+   * Search DataHub tools by semantic query.
+   *
+   * @param query - Natural-language search query
+   * @param options.topK - Max number of tools to return (default: 20)
+   */
+  async datahubSearchTools(
+    query: string,
+    options?: { topK?: number },
+  ): Promise<DatahubSearchToolsResult> {
+    return this.client.datahubSearchTools(query, options)
+  }
+
+  /**
+   * Execute a specific DataHub tool directly.
+   *
+   * Does **not** throw when the tool itself fails (`success=false`).
+   * Returns the `ExecuteResponse` so callers can inspect `error` / `desc`.
+   * HTTP-level errors still throw.
+   *
+   * @param toolName - Tool name (from `datahubSearchTools`)
+   * @param args - Tool execution arguments
+   */
+  async datahubExecuteTool(
+    toolName: string,
+    args?: Record<string, unknown>,
+  ): Promise<ExecuteResponse> {
+    return this.client.datahubExecuteTool(toolName, args)
   }
 
   /** Pull configs from configuration center. */
