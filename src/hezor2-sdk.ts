@@ -82,18 +82,22 @@ export class Hezor2SDK {
   /**
    * Fetch application credentials without creating a full SDK instance.
    *
-   * Only requires `baseUrl`, `apiKey`, and `appName` — no signing
-   * configuration needed. Use the returned `cert_content` (private key)
-   * and `client_secret` (password) to initialise a signed SDK instance.
+   * Only requires `apiKey` and `appName` — `baseUrl` defaults to
+   * `https://hezor.ai/api/v1` and can be omitted for SaaS deployments.
+   * For private deployments, pass your instance URL (must include `/api/v1`).
    *
    * @example
    * ```ts
+   * // SaaS (hezor.ai) — baseUrl can be omitted
+   * const cert = await Hezor2SDK.getAppCerts('my_app', { apiKey: 'your-api-key' })
+   *
+   * // Private deployment
    * const cert = await Hezor2SDK.getAppCerts('my_app', {
-   *   baseUrl: 'https://your-domain.com',
+   *   baseUrl: 'https://your-domain.com/api/v1',
    *   apiKey: 'your-api-key',
    * })
    * const sdk = new Hezor2SDK({
-   *   baseUrl: 'https://your-domain.com',
+   *   baseUrl: 'https://your-domain.com/api/v1',
    *   apiKey: 'your-api-key',
    *   appName: 'my_app',
    *   privateKeyPem: cert.cert_content,
