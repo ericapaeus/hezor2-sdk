@@ -17,7 +17,9 @@ import type {
   ConnectVerifyResponse,
   CreationGenerateResult,
   CreationGenerateResultV2,
+  DatahubSearchToolsResult,
   DataRetrieveResult,
+  ExecuteResponse,
   PublicReportsResponseData,
   PublishCreationResponseData,
   PullConfigsResponse,
@@ -181,6 +183,32 @@ export class Hezor2SDK {
   /** Execute data retrieval. */
   async dataRetrieve(query: string, options?: { topK?: number }): Promise<DataRetrieveResult> {
     return this.client.dataRetrieve(query, options)
+  }
+
+  /**
+   * Search DataHub tools by semantic query.
+   *
+   * @param query - Natural-language search query
+   * @param options.topK - Max number of tools to return (default: 20)
+   */
+  async datahubSearchTools(
+    query: string,
+    options?: { topK?: number },
+  ): Promise<DatahubSearchToolsResult> {
+    return this.client.datahubSearchTools(query, options)
+  }
+
+  /**
+   * Execute a specific DataHub tool directly.
+   *
+   * @param toolName - Tool name (from `datahubSearchTools`)
+   * @param args - Tool execution arguments
+   */
+  async datahubExecuteTool(
+    toolName: string,
+    args?: Record<string, unknown>,
+  ): Promise<ExecuteResponse> {
+    return this.client.datahubExecuteTool(toolName, args)
   }
 
   /** Pull configs from configuration center. */

@@ -137,6 +137,28 @@ export interface DataRetrieveResult {
   results: Record<string, ExecuteResponse>
 }
 
+/** 单个参数定义（对应 Python ParameterSchema）。 */
+export interface ToolParameterSchema {
+  type: string
+  desc: string
+  required?: string[]
+  props?: Record<string, unknown>
+}
+
+/** DataHub 工具元信息（对应 Python ToolSchema）。 */
+export interface ToolSchema {
+  name: string
+  desc: string
+  params?: Record<string, ToolParameterSchema>
+  returns?: ToolParameterSchema
+  group?: string
+}
+
+/** datahub_search_tools 响应（对应 Python SearchResponse）。 */
+export interface DatahubSearchToolsResult {
+  tools: ToolSchema[]
+}
+
 // ---------------------------------------------------------------------------
 // Connect login models
 // ---------------------------------------------------------------------------

@@ -13,7 +13,9 @@ import type {
   ConnectVerifyResponse,
   CreationGenerateResult,
   CreationGenerateResultV2,
+  DatahubSearchToolsResult,
   DataRetrieveResult,
+  ExecuteResponse,
   GenerateReportIdResponseData,
   PublicReportsResponseData,
   PublishCreationResponseData,
@@ -148,9 +150,51 @@ export class Hezor2APIClient extends BaseAPIClient {
   async dataRetrieve(query: string, options?: { topK?: number }): Promise<DataRetrieveResult> {
     const payload: Record<string, unknown> = {
       query,
-      top_k: options?.topK ?? 1,
+      top_k: options?.topK ?? 20,
     }
     const resp = await this.webhookRequest<DataRetrieveResult>('data_retrieve', payload)
+    return resp.data!
+  }
+
+  /**
+   * Search DataHub tools by semantic query.
+   *
+   * Calls `datahub_search_tools` webhook action. Returns matching tools with
+   * their names, descriptions and parameter schemas.
+   *
+   * @param query - Natural-language search query
+   * @param options.topK - Max number of tools to return (default: 20)
+   */
+  async datahubSearchTools(
+    query: string,
+    options?: { topK?: number },
+  ): Promise<DatahubSearchToolsResult> {
+    const payload: Record<string, unknown> = {
+      query,
+      top_k: options?.topK ?? 20,
+    }
+    const resp = await this.webhookRequest<DatahubSearchToolsResult>('datahub_search_tools', payload)
+    return resp.data!
+  }
+
+  /**
+   * Execute a specific DataHub tool directly.
+   *
+   * Calls `datahub_execute_tool` webhook action. Use `datahubSearchTools` to
+   * discover available tools and their parameter schemas.
+   *
+   * @param toolName - Tool name (from `datahubSearchTools`)
+   * @param args - Tool execution arguments (key-value pairs)
+   */
+  async datahubExecuteTool(
+    toolName: string,
+    args?: Record<string, unknown>,
+  ): Promise<ExecuteResponse> {
+    const payload: Record<string, unknown> = {
+      tool_name: toolName,
+      args: args ?? {},
+    }
+    const resp = await this.webhookRequest<ExecuteResponse>('datahub_execute_tool', payload)
     return resp.data!
   }
 

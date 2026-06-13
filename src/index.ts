@@ -97,6 +97,10 @@ export type {
   // Data retrieval
   DataRetrieveResult,
   ExecuteResponse,
+  // DataHub tools
+  DatahubSearchToolsResult,
+  ToolSchema,
+  ToolParameterSchema,
   // Config
   PullConfigsResponse,
   // Connect
