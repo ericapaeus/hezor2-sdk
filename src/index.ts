@@ -71,6 +71,7 @@ export {
   ConnectError,
   ConnectInvalidGrantError,
   ConnectAppMismatchError,
+  SiliconOwnerBoundError,
 } from './errors.js'
 
 // --- Utils ---
@@ -78,6 +79,12 @@ export { normalizeBaseUrl, InvalidBaseUrlError } from './utils/base-url.js'
 
 // --- Security ---
 export * as security from './security/index.js'
+
+// --- Silicon Runtime Client ---
+export { SiliconRuntimeClient, type SiliconRuntimeClientOptions } from './silicon-runtime-client.js'
+
+// --- Hezor LLM Client ---
+export { HezorLLMClient, type HezorLLMClientOptions } from './hezor-llm-client.js'
 
 // --- Types ---
 export { mergedConfigs } from './types.js'
@@ -114,4 +121,11 @@ export type {
   // App binding
   AppCertInfo,
   UserAppBindingInfo,
+  // Silicon Runtime
+  AutoProvisionRequest,
+  AutoProvisionResponse,
+  SiliconRuntime,
+  RefreshTunnelTokenResponse,
+  // LLM
+  ChatMessage,
 } from './types.js'

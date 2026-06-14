@@ -220,6 +220,53 @@ export class Hezor2SDK {
     return this.client.datahubExecuteTool(toolName, args)
   }
 
+  // ── 用户 token 鉴权 DataHub 方法 ─────────────────────────────────────────
+
+  /**
+   * 通过用户 OAuth token 调用 data_retrieve（/webhook/user/）。
+   *
+   * @param query     - 自然语言数据查询语句
+   * @param options.topK      - 工具搜索数量上限（默认 20）
+   * @param options.userToken - 用户 OAuth access_token（必填）
+   */
+  async dataRetrieveAsUser(
+    query: string,
+    options: { topK?: number; userToken: string },
+  ): Promise<DataRetrieveResult> {
+    return this.client.dataRetrieveAsUser(query, options)
+  }
+
+  /**
+   * 通过用户 OAuth token 语义搜索 DataHub 工具（/webhook/user/）。
+   *
+   * @param query     - 工具搜索查询语句
+   * @param options.topK      - 返回工具数量上限（默认 20）
+   * @param options.userToken - 用户 OAuth access_token（必填）
+   */
+  async datahubSearchToolsAsUser(
+    query: string,
+    options: { topK?: number; userToken: string },
+  ): Promise<DatahubSearchToolsResult> {
+    return this.client.datahubSearchToolsAsUser(query, options)
+  }
+
+  /**
+   * 通过用户 OAuth token 执行 DataHub 工具（/webhook/user/）。
+   *
+   * 工具执行失败（success=false）时**不抛出**，返回 ExecuteResponse。
+   *
+   * @param toolName  - 工具名称
+   * @param args      - 工具执行参数
+   * @param options.userToken - 用户 OAuth access_token（必填）
+   */
+  async datahubExecuteToolAsUser(
+    toolName: string,
+    args: Record<string, unknown> = {},
+    options: { userToken: string },
+  ): Promise<ExecuteResponse> {
+    return this.client.datahubExecuteToolAsUser(toolName, args, options)
+  }
+
   /** Pull configs from configuration center. */
   async pullConfigs(options?: {
     keys?: string[]
