@@ -77,9 +77,7 @@ export class SiliconRuntimeClient {
         // 非 JSON 响应
       }
       if (code === 'SILICON_RUNTIME_OWNER_BOUND') {
-        throw new SiliconOwnerBoundError(
-          'device_id 已被其他 hezor 账号绑定，如需切换账号请先在平台注销原 runtime',
-        )
+        throw new SiliconOwnerBoundError()
       }
       throw new Error(`auto-provision failed: HTTP ${resp.status}`)
     }
@@ -124,8 +122,7 @@ export class SiliconRuntimeClient {
     // 204 成功；404 runtime 已不存在 → 幂等
     if (resp.status === 204 || resp.status === 404) return
 
-    const errText = await resp.text().catch(() => '')
-    throw new Error(`deregisterRuntime: HTTP ${resp.status} ${errText.slice(0, 200)}`)
+    throw new Error(`deregisterRuntime: HTTP ${resp.status} ${resp.statusText}`)
   }
 
   /**
@@ -152,8 +149,7 @@ export class SiliconRuntimeClient {
     )
 
     if (!resp.ok) {
-      const text = await resp.text().catch(() => '')
-      throw new Error(`refreshTunnelToken: HTTP ${resp.status} ${text.slice(0, 200)}`)
+      throw new Error(`refreshTunnelToken: HTTP ${resp.status} ${resp.statusText}`)
     }
 
     return (await resp.json()) as RefreshTunnelTokenResponse

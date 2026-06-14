@@ -6,7 +6,7 @@
 
 import { BaseAPIClient, type BaseAPIClientOptions } from './base-api-client.js'
 import { REQ_HEADER_APP_NAME_KEY, REQ_HEADER_META_INFO_KEY } from './constants.js'
-import { DEFAULT_API_BASE_URL, DEFAULT_API_KEY } from './env-config.js'
+import { DEFAULT_API_BASE_URL, DEFAULT_API_KEY, DEFAULT_APP_NAME } from './env-config.js'
 import type {
   AppCertInfo,
   ConnectRefreshResponse,
@@ -72,11 +72,10 @@ export class Hezor2APIClient extends BaseAPIClient {
   }
 
   /**
-   * Send a request to the user-authenticated webhook endpoint (/webhook/user/).
-   * Authorization: Bearer <userToken>（用户 OAuth access_token，由调用方动态传入）。
-   * @throws {Error} HTTP 错误或业务 status="error"
+   * /webhook/user/ HTTP 层：发请求、校验 HTTP 状态、解析响应体。
+   * 不检查业务 status=error，由上层决定处理方式。
    */
-  private async webhookUserRequest<T = unknown>(
+  private async webhookUserPost<T = unknown>(
     action: string,
     payload: Record<string, unknown>,
     options: WebhookUserOptions,
@@ -86,7 +85,7 @@ export class Hezor2APIClient extends BaseAPIClient {
       json: body,
       headers: {
         Authorization: `Bearer ${options.userToken}`,
-        [REQ_HEADER_APP_NAME_KEY]: this.appName ?? 'public',
+        [REQ_HEADER_APP_NAME_KEY]: this.appName ?? DEFAULT_APP_NAME,
       },
       skipAuth: true,
       ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
@@ -94,7 +93,20 @@ export class Hezor2APIClient extends BaseAPIClient {
     if (!response.ok) {
       throw new Error(`Webhook user HTTP error: ${response.status} ${response.statusText}`)
     }
-    const resp = (await response.json()) as WebhookResponse<T>
+    return (await response.json()) as WebhookResponse<T>
+  }
+
+  /**
+   * Send a request to the user-authenticated webhook endpoint (/webhook/user/).
+   * Authorization: Bearer <userToken>（用户 OAuth access_token，由调用方动态传入）。
+   * @throws {Error} HTTP 错误或业务 status="error"
+   */
+  private async webhookUserRequest<T = unknown>(
+    action: string,
+    payload: Record<string, unknown>,
+    options: WebhookUserOptions,
+  ): Promise<WebhookResponse<T>> {
+    const resp = await this.webhookUserPost<T>(action, payload, options)
     if (resp.status === 'error') {
       throw new Error(`Webhook action '${action}' failed: ${resp.message || 'unknown error'}`)
     }
@@ -318,27 +330,19 @@ export class Hezor2APIClient extends BaseAPIClient {
    * **不抛出**，返回 ExecuteResponse 由调用方检查 error / desc。
    *
    * @param toolName  - 工具名称
-   * @param args      - 工具执行参数
+   * @param args      - 工具执行参数（默认 {}）
    * @param options.userToken - 用户 OAuth access_token（必填）
    */
   async datahubExecuteToolAsUser(
     toolName: string,
-    args: Record<string, unknown>,
+    args: Record<string, unknown> = {},
     options: { userToken: string },
   ): Promise<ExecuteResponse> {
-    const body = { action: 'datahub_execute_tool', payload: { tool_name: toolName, args } }
-    const response = await this.post('/webhook/user/', {
-      json: body,
-      headers: {
-        Authorization: `Bearer ${options.userToken}`,
-        [REQ_HEADER_APP_NAME_KEY]: this.appName ?? 'public',
-      },
-      skipAuth: true,
-    })
-    if (!response.ok) {
-      throw new Error(`Webhook user HTTP error: ${response.status} ${response.statusText}`)
-    }
-    const resp = (await response.json()) as WebhookResponse<ExecuteResponse>
+    const resp = await this.webhookUserPost<ExecuteResponse>(
+      'datahub_execute_tool',
+      { tool_name: toolName, args },
+      { userToken: options.userToken },
+    )
     // status=error → 工具执行失败，不抛出，透传给调用方
     if (resp.status === 'error') {
       return (

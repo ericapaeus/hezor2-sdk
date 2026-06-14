@@ -16,6 +16,7 @@
 
 import OpenAI from 'openai'
 import type { ChatMessage } from './types.js'
+import { normalizeBaseUrl } from './utils/base-url.js'
 
 export interface HezorLLMClientOptions {
   /**
@@ -37,7 +38,7 @@ export class HezorLLMClient {
   private readonly model: string
 
   constructor(options: HezorLLMClientOptions) {
-    const base = options.baseUrl.replace(/\/+$/, '')
+    const base = normalizeBaseUrl(options.baseUrl)
     this.openai = new OpenAI({
       apiKey: options.userToken,
       baseURL: `${base}/openai/latest`,

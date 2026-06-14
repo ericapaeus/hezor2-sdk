@@ -261,7 +261,7 @@ export class Hezor2SDK {
    */
   async datahubExecuteToolAsUser(
     toolName: string,
-    args: Record<string, unknown>,
+    args: Record<string, unknown> = {},
     options: { userToken: string },
   ): Promise<ExecuteResponse> {
     return this.client.datahubExecuteToolAsUser(toolName, args, options)
