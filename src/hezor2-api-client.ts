@@ -5,7 +5,7 @@
  */
 
 import { BaseAPIClient, type BaseAPIClientOptions } from './base-api-client.js'
-import { REQ_HEADER_META_INFO_KEY } from './constants.js'
+import { REQ_HEADER_APP_NAME_KEY, REQ_HEADER_META_INFO_KEY } from './constants.js'
 import { DEFAULT_API_BASE_URL, DEFAULT_API_KEY } from './env-config.js'
 import type {
   AppCertInfo,
@@ -84,7 +84,10 @@ export class Hezor2APIClient extends BaseAPIClient {
     const body = { action, payload }
     const response = await this.post('/webhook/user/', {
       json: body,
-      headers: { Authorization: `Bearer ${options.userToken}` },
+      headers: {
+        Authorization: `Bearer ${options.userToken}`,
+        [REQ_HEADER_APP_NAME_KEY]: this.appName ?? 'public',
+      },
       skipAuth: true,
       ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
     })
@@ -326,7 +329,10 @@ export class Hezor2APIClient extends BaseAPIClient {
     const body = { action: 'datahub_execute_tool', payload: { tool_name: toolName, args } }
     const response = await this.post('/webhook/user/', {
       json: body,
-      headers: { Authorization: `Bearer ${options.userToken}` },
+      headers: {
+        Authorization: `Bearer ${options.userToken}`,
+        [REQ_HEADER_APP_NAME_KEY]: this.appName ?? 'public',
+      },
       skipAuth: true,
     })
     if (!response.ok) {
