@@ -185,8 +185,15 @@ export class Hezor2SDK {
    *
    * @remarks **Breaking change (v1.6.x → v1.7.x)**: default `topK` changed
    * from `1` to `20`. Pass `{ topK: 1 }` explicitly to restore the old behaviour.
+   *
+   * @param options.searchInToolkitSchemaGroups - 限定检索范围到这些
+   * `ToolSchema.group`（及其所有子 group），与 toolkit 订阅正交（RFC #151 §4.11）。
+   * `undefined`/空列表表示不限制。
    */
-  async dataRetrieve(query: string, options?: { topK?: number }): Promise<DataRetrieveResult> {
+  async dataRetrieve(
+    query: string,
+    options?: { topK?: number; searchInToolkitSchemaGroups?: string[] },
+  ): Promise<DataRetrieveResult> {
     return this.client.dataRetrieve(query, options)
   }
 
@@ -195,10 +202,13 @@ export class Hezor2SDK {
    *
    * @param query - Natural-language search query
    * @param options.topK - Max number of tools to return (default: 20)
+   * @param options.searchInToolkitSchemaGroups - 限定搜索范围到这些
+   * `ToolSchema.group`（及其所有子 group），与 toolkit 订阅正交（RFC #151 §4.11）。
+   * `undefined`/空列表表示不限制。
    */
   async datahubSearchTools(
     query: string,
-    options?: { topK?: number },
+    options?: { topK?: number; searchInToolkitSchemaGroups?: string[] },
   ): Promise<DatahubSearchToolsResult> {
     return this.client.datahubSearchTools(query, options)
   }
@@ -212,12 +222,16 @@ export class Hezor2SDK {
    *
    * @param toolName - Tool name (from `datahubSearchTools`)
    * @param args - Tool execution arguments
+   * @param options.searchInToolkitSchemaGroups - 限定执行校验范围到这些
+   * `ToolSchema.group`（及其所有子 group），与 toolkit 订阅正交（RFC #151 §4.11）。
+   * `undefined`/空列表表示不限制。
    */
   async datahubExecuteTool(
     toolName: string,
     args?: Record<string, unknown>,
+    options?: { searchInToolkitSchemaGroups?: string[] },
   ): Promise<ExecuteResponse> {
-    return this.client.datahubExecuteTool(toolName, args)
+    return this.client.datahubExecuteTool(toolName, args, options)
   }
 
   // ── 用户 token 鉴权 DataHub 方法 ─────────────────────────────────────────
@@ -227,11 +241,14 @@ export class Hezor2SDK {
    *
    * @param query     - 自然语言数据查询语句
    * @param options.topK      - 工具搜索数量上限（默认 20）
+   * @param options.searchInToolkitSchemaGroups - 限定检索范围到这些
+   *   `ToolSchema.group`（及其所有子 group），与 toolkit 订阅正交（RFC #151 §4.11）。
+   *   `undefined`/空列表表示不限制。
    * @param options.userToken - 用户 OAuth access_token（必填）
    */
   async dataRetrieveAsUser(
     query: string,
-    options: { topK?: number; userToken: string },
+    options: { topK?: number; searchInToolkitSchemaGroups?: string[]; userToken: string },
   ): Promise<DataRetrieveResult> {
     return this.client.dataRetrieveAsUser(query, options)
   }
@@ -241,11 +258,14 @@ export class Hezor2SDK {
    *
    * @param query     - 工具搜索查询语句
    * @param options.topK      - 返回工具数量上限（默认 20）
+   * @param options.searchInToolkitSchemaGroups - 限定搜索范围到这些
+   *   `ToolSchema.group`（及其所有子 group），与 toolkit 订阅正交（RFC #151 §4.11）。
+   *   `undefined`/空列表表示不限制。
    * @param options.userToken - 用户 OAuth access_token（必填）
    */
   async datahubSearchToolsAsUser(
     query: string,
-    options: { topK?: number; userToken: string },
+    options: { topK?: number; searchInToolkitSchemaGroups?: string[]; userToken: string },
   ): Promise<DatahubSearchToolsResult> {
     return this.client.datahubSearchToolsAsUser(query, options)
   }
@@ -257,12 +277,15 @@ export class Hezor2SDK {
    *
    * @param toolName  - 工具名称
    * @param args      - 工具执行参数
+   * @param options.searchInToolkitSchemaGroups - 限定执行校验范围到这些
+   *   `ToolSchema.group`（及其所有子 group），与 toolkit 订阅正交（RFC #151 §4.11）。
+   *   `undefined`/空列表表示不限制。
    * @param options.userToken - 用户 OAuth access_token（必填）
    */
   async datahubExecuteToolAsUser(
     toolName: string,
     args: Record<string, unknown> = {},
-    options: { userToken: string },
+    options: { searchInToolkitSchemaGroups?: string[]; userToken: string },
   ): Promise<ExecuteResponse> {
     return this.client.datahubExecuteToolAsUser(toolName, args, options)
   }

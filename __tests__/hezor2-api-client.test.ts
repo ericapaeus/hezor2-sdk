@@ -292,6 +292,106 @@ describe('Hezor2APIClient', () => {
     expect(body.payload.top_k).toBe(5)
   })
 
+  it('should pass searchInToolkitSchemaGroups for data_retrieve', async () => {
+    const mockResponse: WebhookResponse = {
+      action: 'data_retrieve',
+      status: 'ok',
+      data: { query: 'q', results: {} },
+      message: '',
+    }
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    await client.dataRetrieve('q', { searchInToolkitSchemaGroups: ['植保'] })
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(body.payload.search_in_toolkit_schema_groups).toEqual(['植保'])
+  })
+
+  it('should omit search_in_toolkit_schema_groups when empty array is passed to data_retrieve', async () => {
+    const mockResponse: WebhookResponse = {
+      action: 'data_retrieve',
+      status: 'ok',
+      data: { query: 'q', results: {} },
+      message: '',
+    }
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    await client.dataRetrieve('q', { searchInToolkitSchemaGroups: [] })
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(body.payload).not.toHaveProperty('search_in_toolkit_schema_groups')
+  })
+
+  // --- datahubSearchTools / datahubExecuteTool ---
+
+  it('should call datahub_search_tools with searchInToolkitSchemaGroups', async () => {
+    const mockResponse: WebhookResponse = {
+      action: 'datahub_search_tools',
+      status: 'ok',
+      data: { tools: [] },
+      message: '',
+    }
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    await client.datahubSearchTools('weather', { searchInToolkitSchemaGroups: ['植保'] })
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(body.payload.search_in_toolkit_schema_groups).toEqual(['植保'])
+  })
+
+  it('should omit search_in_toolkit_schema_groups when empty array is passed to datahub_search_tools', async () => {
+    const mockResponse: WebhookResponse = {
+      action: 'datahub_search_tools',
+      status: 'ok',
+      data: { tools: [] },
+      message: '',
+    }
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    await client.datahubSearchTools('weather', { searchInToolkitSchemaGroups: [] })
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(body.payload).not.toHaveProperty('search_in_toolkit_schema_groups')
+  })
+
+  it('should call datahub_execute_tool with searchInToolkitSchemaGroups', async () => {
+    const mockResponse: WebhookResponse = {
+      action: 'datahub_execute_tool',
+      status: 'ok',
+      data: { success: true, data: {}, count: 1, error: '', desc: '' },
+      message: '',
+    }
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    await client.datahubExecuteTool('weather', { city: '北京' }, {
+      searchInToolkitSchemaGroups: ['植保'],
+    })
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(body.payload.search_in_toolkit_schema_groups).toEqual(['植保'])
+  })
+
+  it('should omit search_in_toolkit_schema_groups when empty array is passed to datahub_execute_tool', async () => {
+    const mockResponse: WebhookResponse = {
+      action: 'datahub_execute_tool',
+      status: 'ok',
+      data: { success: true, data: {}, count: 1, error: '', desc: '' },
+      message: '',
+    }
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    await client.datahubExecuteTool('weather', {}, { searchInToolkitSchemaGroups: [] })
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(body.payload).not.toHaveProperty('search_in_toolkit_schema_groups')
+  })
+
   // --- pullConfigs ---
 
   it('should call pull_configs', async () => {
