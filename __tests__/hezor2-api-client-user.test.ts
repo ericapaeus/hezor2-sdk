@@ -165,6 +165,25 @@ describe('Hezor2APIClient — 用户 token webhook 方法（/webhook/user/）', 
       const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
       expect(body.payload.search_in_toolkit_schema_groups).toEqual(['植保'])
     })
+
+    it('空数组归一化为未传（不带该字段）', async () => {
+      const mockResponse: WebhookResponse<DatahubSearchToolsResult> = {
+        action: 'datahub_search_tools',
+        status: 'ok',
+        data: { tools: [] },
+        message: '',
+      }
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify(mockResponse), { status: 200 }),
+      )
+
+      await client.datahubSearchToolsAsUser('weather', {
+        searchInToolkitSchemaGroups: [],
+        userToken: USER_TOKEN,
+      })
+      const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+      expect(body.payload).not.toHaveProperty('search_in_toolkit_schema_groups')
+    })
   })
 
   // ── datahubExecuteToolAsUser ──────────────────────────────────────────────
