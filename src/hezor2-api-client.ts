@@ -40,6 +40,16 @@ export interface Hezor2APIClientOptions extends Omit<BaseAPIClientOptions, 'base
   baseUrl?: string | undefined
 }
 
+/**
+ * 归一化 `searchInToolkitSchemaGroups`：空列表视为未传，统一转为 `undefined`。
+ *
+ * 与后端 `ExecuteRequest`/`search_tools` 的"None/空列表表示不限制"语义保持一致，
+ * 避免空数组被序列化为 JSON `[]` 发给服务端后产生歧义（详见 hezor2 PR #608）。
+ */
+function normalizeSchemaGroups(groups: readonly string[] | undefined): string[] | undefined {
+  return groups && groups.length > 0 ? [...groups] : undefined
+}
+
 export class Hezor2APIClient extends BaseAPIClient {
   constructor(options: Hezor2APIClientOptions = {}) {
     super({
@@ -202,12 +212,21 @@ export class Hezor2APIClient extends BaseAPIClient {
    * @remarks **Breaking change (v1.6.x → v1.7.x)**: default `topK` changed
    * from `1` to `20` to align with the backend DataFetchFlowV2 default.
    * Callers that rely on the old default must pass `{ topK: 1 }` explicitly.
+   *
+   * @param options.searchInToolkitSchemaGroups - 限定检索范围到这些
+   * `ToolSchema.group`（及其所有子 group），与 toolkit 订阅正交（RFC #151 §4.11）。
+   * `undefined`/空列表表示不限制。
    */
-  async dataRetrieve(query: string, options?: { topK?: number }): Promise<DataRetrieveResult> {
+  async dataRetrieve(
+    query: string,
+    options?: { topK?: number; searchInToolkitSchemaGroups?: string[] },
+  ): Promise<DataRetrieveResult> {
     const payload: Record<string, unknown> = {
       query,
       top_k: options?.topK ?? 20,
     }
+    const groups = normalizeSchemaGroups(options?.searchInToolkitSchemaGroups)
+    if (groups) payload['search_in_toolkit_schema_groups'] = groups
     const resp = await this.webhookRequest<DataRetrieveResult>('data_retrieve', payload)
     return resp.data!
   }
@@ -220,15 +239,20 @@ export class Hezor2APIClient extends BaseAPIClient {
    *
    * @param query - Natural-language search query
    * @param options.topK - Max number of tools to return (default: 20)
+   * @param options.searchInToolkitSchemaGroups - 限定搜索范围到这些
+   * `ToolSchema.group`（及其所有子 group），与 toolkit 订阅正交（RFC #151 §4.11）。
+   * `undefined`/空列表表示不限制。
    */
   async datahubSearchTools(
     query: string,
-    options?: { topK?: number },
+    options?: { topK?: number; searchInToolkitSchemaGroups?: string[] },
   ): Promise<DatahubSearchToolsResult> {
     const payload: Record<string, unknown> = {
       query,
       top_k: options?.topK ?? 20,
     }
+    const groups = normalizeSchemaGroups(options?.searchInToolkitSchemaGroups)
+    if (groups) payload['search_in_toolkit_schema_groups'] = groups
     const resp = await this.webhookRequest<DatahubSearchToolsResult>(
       'datahub_search_tools',
       payload,
@@ -248,15 +272,21 @@ export class Hezor2APIClient extends BaseAPIClient {
    *
    * @param toolName - Tool name (from `datahubSearchTools`)
    * @param args - Tool execution arguments (key-value pairs)
+   * @param options.searchInToolkitSchemaGroups - 限定执行校验范围到这些
+   * `ToolSchema.group`（及其所有子 group），与 toolkit 订阅正交（RFC #151 §4.11）。
+   * `undefined`/空列表表示不限制。
    */
   async datahubExecuteTool(
     toolName: string,
     args?: Record<string, unknown>,
+    options?: { searchInToolkitSchemaGroups?: string[] },
   ): Promise<ExecuteResponse> {
     const payload: Record<string, unknown> = {
       tool_name: toolName,
       args: args ?? {},
     }
+    const groups = normalizeSchemaGroups(options?.searchInToolkitSchemaGroups)
+    if (groups) payload['search_in_toolkit_schema_groups'] = groups
     const body = { action: 'datahub_execute_tool', payload }
     const response = await this.post('/webhook/', { json: body })
     if (!response.ok) {
@@ -290,15 +320,23 @@ export class Hezor2APIClient extends BaseAPIClient {
    *
    * @param query     - 自然语言数据查询语句
    * @param options.topK      - 工具搜索数量上限（默认 20）
+   * @param options.searchInToolkitSchemaGroups - 限定检索范围到这些
+   *   `ToolSchema.group`（及其所有子 group），与 toolkit 订阅正交（RFC #151 §4.11）。
+   *   `undefined`/空列表表示不限制。
    * @param options.userToken - 用户 OAuth access_token（必填）
    */
   async dataRetrieveAsUser(
     query: string,
-    options: { topK?: number; userToken: string },
+    options: { topK?: number; searchInToolkitSchemaGroups?: string[]; userToken: string },
   ): Promise<DataRetrieveResult> {
+    const groups = normalizeSchemaGroups(options.searchInToolkitSchemaGroups)
     const resp = await this.webhookUserRequest<DataRetrieveResult>(
       'data_retrieve',
-      { query, top_k: options.topK ?? 20 },
+      {
+        query,
+        top_k: options.topK ?? 20,
+        ...(groups ? { search_in_toolkit_schema_groups: groups } : {}),
+      },
       { userToken: options.userToken },
     )
     return resp.data!
@@ -309,15 +347,23 @@ export class Hezor2APIClient extends BaseAPIClient {
    *
    * @param query     - 工具搜索查询语句
    * @param options.topK      - 返回工具数量上限（默认 20）
+   * @param options.searchInToolkitSchemaGroups - 限定搜索范围到这些
+   *   `ToolSchema.group`（及其所有子 group），与 toolkit 订阅正交（RFC #151 §4.11）。
+   *   `undefined`/空列表表示不限制。
    * @param options.userToken - 用户 OAuth access_token（必填）
    */
   async datahubSearchToolsAsUser(
     query: string,
-    options: { topK?: number; userToken: string },
+    options: { topK?: number; searchInToolkitSchemaGroups?: string[]; userToken: string },
   ): Promise<DatahubSearchToolsResult> {
+    const groups = normalizeSchemaGroups(options.searchInToolkitSchemaGroups)
     const resp = await this.webhookUserRequest<DatahubSearchToolsResult>(
       'datahub_search_tools',
-      { query, top_k: options.topK ?? 20 },
+      {
+        query,
+        top_k: options.topK ?? 20,
+        ...(groups ? { search_in_toolkit_schema_groups: groups } : {}),
+      },
       { userToken: options.userToken },
     )
     return resp.data!
@@ -331,16 +377,20 @@ export class Hezor2APIClient extends BaseAPIClient {
    *
    * @param toolName  - 工具名称
    * @param args      - 工具执行参数（默认 {}）
+   * @param options.searchInToolkitSchemaGroups - 限定执行校验范围到这些
+   *   `ToolSchema.group`（及其所有子 group），与 toolkit 订阅正交（RFC #151 §4.11）。
+   *   `undefined`/空列表表示不限制。
    * @param options.userToken - 用户 OAuth access_token（必填）
    */
   async datahubExecuteToolAsUser(
     toolName: string,
     args: Record<string, unknown> = {},
-    options: { userToken: string },
+    options: { searchInToolkitSchemaGroups?: string[]; userToken: string },
   ): Promise<ExecuteResponse> {
+    const groups = normalizeSchemaGroups(options.searchInToolkitSchemaGroups)
     const resp = await this.webhookUserPost<ExecuteResponse>(
       'datahub_execute_tool',
-      { tool_name: toolName, args },
+      { tool_name: toolName, args, ...(groups ? { search_in_toolkit_schema_groups: groups } : {}) },
       { userToken: options.userToken },
     )
     // status=error → 工具执行失败，不抛出，透传给调用方

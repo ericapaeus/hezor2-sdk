@@ -64,6 +64,44 @@ describe('Hezor2APIClient — 用户 token webhook 方法（/webhook/user/）', 
       expect(body.payload.top_k).toBe(5)
     })
 
+    it('searchInToolkitSchemaGroups 参数透传', async () => {
+      const mockResponse: WebhookResponse<DataRetrieveResult> = {
+        action: 'data_retrieve',
+        status: 'ok',
+        data: { query: '', results: {} },
+        message: '',
+      }
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify(mockResponse), { status: 200 }),
+      )
+
+      await client.dataRetrieveAsUser('q', {
+        searchInToolkitSchemaGroups: ['植保'],
+        userToken: USER_TOKEN,
+      })
+      const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+      expect(body.payload.search_in_toolkit_schema_groups).toEqual(['植保'])
+    })
+
+    it('空数组归一化为未传（不带该字段）', async () => {
+      const mockResponse: WebhookResponse<DataRetrieveResult> = {
+        action: 'data_retrieve',
+        status: 'ok',
+        data: { query: '', results: {} },
+        message: '',
+      }
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify(mockResponse), { status: 200 }),
+      )
+
+      await client.dataRetrieveAsUser('q', {
+        searchInToolkitSchemaGroups: [],
+        userToken: USER_TOKEN,
+      })
+      const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+      expect(body.payload).not.toHaveProperty('search_in_toolkit_schema_groups')
+    })
+
     it('401 — 抛出 Error', async () => {
       fetchSpy.mockResolvedValue(new Response('Unauthorized', { status: 401 }))
       await expect(
@@ -108,6 +146,44 @@ describe('Hezor2APIClient — 用户 token webhook 方法（/webhook/user/）', 
         client.datahubSearchToolsAsUser('q', { userToken: USER_TOKEN }),
       ).rejects.toThrow(/401/)
     })
+
+    it('searchInToolkitSchemaGroups 参数透传', async () => {
+      const mockResponse: WebhookResponse<DatahubSearchToolsResult> = {
+        action: 'datahub_search_tools',
+        status: 'ok',
+        data: { tools: [] },
+        message: '',
+      }
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify(mockResponse), { status: 200 }),
+      )
+
+      await client.datahubSearchToolsAsUser('weather', {
+        searchInToolkitSchemaGroups: ['植保'],
+        userToken: USER_TOKEN,
+      })
+      const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+      expect(body.payload.search_in_toolkit_schema_groups).toEqual(['植保'])
+    })
+
+    it('空数组归一化为未传（不带该字段）', async () => {
+      const mockResponse: WebhookResponse<DatahubSearchToolsResult> = {
+        action: 'datahub_search_tools',
+        status: 'ok',
+        data: { tools: [] },
+        message: '',
+      }
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify(mockResponse), { status: 200 }),
+      )
+
+      await client.datahubSearchToolsAsUser('weather', {
+        searchInToolkitSchemaGroups: [],
+        userToken: USER_TOKEN,
+      })
+      const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+      expect(body.payload).not.toHaveProperty('search_in_toolkit_schema_groups')
+    })
   })
 
   // ── datahubExecuteToolAsUser ──────────────────────────────────────────────
@@ -144,6 +220,41 @@ describe('Hezor2APIClient — 用户 token webhook 方法（/webhook/user/）', 
       const body = JSON.parse(options.body)
       expect(body.payload.tool_name).toBe('weather')
       expect(body.payload.args).toEqual({ city: '北京' })
+    })
+
+    it('searchInToolkitSchemaGroups 参数透传，空数组归一化为未传', async () => {
+      const mockExecResult: ExecuteResponse = {
+        success: true,
+        data: {},
+        count: 0,
+        error: '',
+        desc: '',
+      }
+      const mockResponse: WebhookResponse<ExecuteResponse> = {
+        action: 'datahub_execute_tool',
+        status: 'ok',
+        data: mockExecResult,
+        message: '',
+      }
+      fetchSpy.mockImplementation(
+        async () => new Response(JSON.stringify(mockResponse), { status: 200 }),
+      )
+
+      await client.datahubExecuteToolAsUser(
+        'weather',
+        {},
+        { searchInToolkitSchemaGroups: ['植保'], userToken: USER_TOKEN },
+      )
+      const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+      expect(body.payload.search_in_toolkit_schema_groups).toEqual(['植保'])
+
+      await client.datahubExecuteToolAsUser(
+        'weather',
+        {},
+        { searchInToolkitSchemaGroups: [], userToken: USER_TOKEN },
+      )
+      const body2 = JSON.parse(fetchSpy.mock.calls[1]![1].body)
+      expect(body2.payload).not.toHaveProperty('search_in_toolkit_schema_groups')
     })
 
     it('工具执行失败（status=error）— 不抛出，透传 ExecuteResponse', async () => {
