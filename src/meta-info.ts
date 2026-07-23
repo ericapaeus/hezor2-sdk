@@ -45,26 +45,62 @@ export interface MetaInfoData {
   grant_version?: number
 }
 
+/** Returns true when the PEM header indicates an encrypted PKCS#8 private key. */
+function pemLooksEncrypted(pem: string): boolean {
+  return pem.includes('ENCRYPTED PRIVATE KEY')
+}
+
 async function encodeJwtWithPem(
   pem: string,
   payload: Record<string, unknown>,
   password?: string,
   expiresIn: number = 3600,
+  /** Diagnostic label used only for warn logs, e.g. 'anonymous fallback' / 'retry with anonymous password'. */
+  diagLabel = 'primary',
 ): Promise<string> {
   const alg = 'EdDSA'
 
-  // Use node:crypto for encrypted PKCS#8 keys (jose's importPKCS8 only handles unencrypted)
-  const key = password
-    ? createPrivateKey({ key: pem, format: 'pem', type: 'pkcs8', passphrase: password })
-    : await importPKCS8(pem, alg, { extractable: false })
+  // Sanity-check the PEM/password combo up front — mismatches here are the most common
+  // cause of the opaque OpenSSL "bad decrypt" error surfaced later.
+  const encrypted = pemLooksEncrypted(pem)
+  if (password && !encrypted) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[meta-info:${diagLabel}] password 已提供，但 PEM 头不是 "ENCRYPTED PRIVATE KEY"（看起来是未加密的私钥）。` +
+        '继续尝试用 passphrase 解密大概率会触发 "bad decrypt"。请确认私钥文件本身是否用密码加密过。',
+    )
+  }
+  if (!password && encrypted) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[meta-info:${diagLabel}] PEM 头是 "ENCRYPTED PRIVATE KEY"，但未提供 password。解密会失败。` +
+        '请检查 privateKeyPath/privateKeyPem 对应的密钥是否需要 password 参数。',
+    )
+  }
 
-  const jwt = await new SignJWT(payload)
-    .setProtectedHeader({ alg })
-    .setIssuedAt()
-    .setExpirationTime(`${expiresIn}s`)
-    .sign(key)
+  try {
+    // Use node:crypto for encrypted PKCS#8 keys (jose's importPKCS8 only handles unencrypted)
+    const key = password
+      ? createPrivateKey({ key: pem, format: 'pem', type: 'pkcs8', passphrase: password })
+      : await importPKCS8(pem, alg, { extractable: false })
 
-  return jwt
+    return await new SignJWT(payload)
+      .setProtectedHeader({ alg })
+      .setIssuedAt()
+      .setExpirationTime(`${expiresIn}s`)
+      .sign(key)
+  } catch (e: unknown) {
+    const originalMessage = e instanceof Error ? e.message : String(e)
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[meta-info:${diagLabel}] JWT 签名失败：${originalMessage}\n` +
+        `  - PEM 头判断为${encrypted ? '已加密' : '未加密'}（是否含 "ENCRYPTED PRIVATE KEY"）\n` +
+        `  - 本次调用是否提供了 password：${password ? '是' : '否'}\n` +
+        '  - 常见原因：① password 错误 ② PEM 加密/未加密状态与是否传 password 不匹配 ' +
+        '③ PEM 内容被截断/换行符被破坏（例如从环境变量读取时 \\n 被转义或被裁剪）',
+    )
+    throw e
+  }
 }
 
 /**
@@ -87,9 +123,27 @@ export async function metaInfoToRequestHeader(
   let privateKeyPem = options.privateKeyPem
   let password = options.password
 
+  // Diagnostic: record where the key actually came from, so a later "bad decrypt"
+  // can be traced back to "path" vs "inline pem" vs "anonymous fallback" without
+  // needing to log the key/password content itself.
+  let keySource: 'privateKeyPem' | 'privateKeyPath' | 'anonymous' = privateKeyPem
+    ? 'privateKeyPem'
+    : options.privateKeyPath
+      ? 'privateKeyPath'
+      : 'anonymous'
+
   // Resolve PEM from file path if privateKeyPem is not directly provided
   if (!privateKeyPem && options.privateKeyPath) {
-    privateKeyPem = readFileSync(options.privateKeyPath, 'utf-8')
+    try {
+      privateKeyPem = readFileSync(options.privateKeyPath, 'utf-8')
+    } catch (e: unknown) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[meta-info] 读取 privateKeyPath="${options.privateKeyPath}" 失败：` +
+          `${e instanceof Error ? e.message : String(e)}`,
+      )
+      throw e
+    }
   }
 
   if (!privateKeyPem) {
@@ -106,26 +160,67 @@ export async function metaInfoToRequestHeader(
     console.warn('*'.repeat(20))
     privateKeyPem = ANONYMOUS_HEADER_PRIVATE_KEY
     password = ANONYMOUS_HEADER_PRIVATE_KEY_PASSWORD
+    keySource = 'anonymous'
   }
 
   const payload: Record<string, unknown> = { ...metaInfo }
 
   try {
-    const token = await encodeJwtWithPem(privateKeyPem, payload, password, expiresIn)
+    const token = await encodeJwtWithPem(privateKeyPem, payload, password, expiresIn, keySource)
     return { [REQ_HEADER_META_INFO_KEY]: token }
   } catch (e: unknown) {
     // Password retry: if decryption failed and we're not already using anonymous password,
     // retry with anonymous password (mirrors Python's MetaInfo.to_request_header)
     const message = e instanceof Error ? e.message.toLowerCase() : ''
-    if (!message.includes('decrypt') && !message.includes('could not')) throw e
-    if (password === ANONYMOUS_HEADER_PRIVATE_KEY_PASSWORD) throw e
+    const looksLikeDecryptFailure = message.includes('decrypt') || message.includes('could not')
 
-    const token = await encodeJwtWithPem(
-      privateKeyPem,
-      payload,
-      ANONYMOUS_HEADER_PRIVATE_KEY_PASSWORD,
-      expiresIn,
+    if (!looksLikeDecryptFailure) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[meta-info] JWT 签名失败且不是常见的解密类错误，直接向上抛出（keySource=${keySource}）：` +
+          `${e instanceof Error ? e.message : String(e)}`,
+      )
+      throw e
+    }
+    if (password === ANONYMOUS_HEADER_PRIVATE_KEY_PASSWORD) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[meta-info] 已经在用匿名私钥兜底签名仍然失败（keySource=${keySource}），` +
+          '说明问题大概率不是业务方密钥，而是匿名密钥/依赖本身异常，请检查 SDK 版本或 jose/node:crypto 环境。',
+      )
+      throw e
+    }
+
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[meta-info] 使用 keySource=${keySource} 签名失败（疑似密码/密钥不匹配），` +
+        '按兼容旧客户端逻辑改用匿名密钥重试一次。若重试仍失败，请重点核对：' +
+        '① 传入的 password 是否正确 ② privateKeyPem/privateKeyPath 内容是否完整（换行符未被破坏）' +
+        `③ 该私钥文件是否确实是加密的 PKCS#8 格式。原始错误：${e instanceof Error ? e.message : String(e)}`,
     )
-    return { [REQ_HEADER_META_INFO_KEY]: token }
+
+    try {
+      const token = await encodeJwtWithPem(
+        privateKeyPem,
+        payload,
+        ANONYMOUS_HEADER_PRIVATE_KEY_PASSWORD,
+        expiresIn,
+        'retry-with-anonymous-password',
+      )
+      return { [REQ_HEADER_META_INFO_KEY]: token }
+    } catch (retryError: unknown) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[meta-info] 匿名密钥重试也失败了（keySource=${keySource}），原始错误和重试错误都会附在抛出的异常上。` +
+          `重试错误：${retryError instanceof Error ? retryError.message : String(retryError)}`,
+      )
+      const wrapped = new Error(
+        `metaInfoToRequestHeader 签名失败：原始错误="${e instanceof Error ? e.message : String(e)}"，` +
+          `匿名密钥重试错误="${retryError instanceof Error ? retryError.message : String(retryError)}"（keySource=${keySource}）`,
+      )
+      // Preserve the retry error for programmatic inspection without relying on ES2022 Error.cause.
+      ;(wrapped as Error & { cause?: unknown }).cause = retryError
+      throw wrapped
+    }
   }
 }
