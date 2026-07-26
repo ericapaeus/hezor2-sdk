@@ -115,6 +115,8 @@ export type {
   ConnectVerifyResponse,
   ConnectRefreshRequest,
   ConnectRefreshResponse,
+  ConnectExchangeRequest,
+  ConnectExchangeResponse,
   // WeChat
   WechatLoginUrlResponse,
   WechatPollOpenidResponse,

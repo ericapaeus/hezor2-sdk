@@ -196,6 +196,18 @@ export interface ConnectRefreshResponse {
   }
 }
 
+export interface ConnectExchangeRequest {
+  connect_code: string
+  app_name: string
+}
+
+export interface ConnectExchangeResponse {
+  access_token: string
+  refresh_token?: string
+  token_type: string
+  expires_in: number
+}
+
 // ---------------------------------------------------------------------------
 // WeChat anonymous OAuth models
 // ---------------------------------------------------------------------------

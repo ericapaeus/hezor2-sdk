@@ -7,8 +7,10 @@
 import { BaseAPIClient, type BaseAPIClientOptions } from './base-api-client.js'
 import { REQ_HEADER_APP_NAME_KEY, REQ_HEADER_META_INFO_KEY } from './constants.js'
 import { DEFAULT_API_BASE_URL, DEFAULT_API_KEY, DEFAULT_APP_NAME } from './env-config.js'
+import { ConnectInvalidGrantError } from './errors.js'
 import type {
   AppCertInfo,
+  ConnectExchangeResponse,
   ConnectRefreshResponse,
   ConnectVerifyResponse,
   CreationGenerateResult,
@@ -563,6 +565,49 @@ export class Hezor2APIClient extends BaseAPIClient {
   }
 
   /**
+   * Exchange a one-time Connect code for access/refresh tokens.
+   *
+   * Calls `POST /auth/connect/exchange` with the one-time `code` obtained
+   * from the `/auth/connect/complete` callback redirect.
+   *
+   * @param code - One-time connect code from the callback URL query string
+   * @throws {ConnectInvalidGrantError} if the code is invalid, expired,
+   *   already used, or does not match the configured `appName`
+   * @throws {Error} for other HTTP errors
+   *
+   * @remarks The `state` value passed to {@link buildConnectUrl} is not sent
+   * here: the server does not consume `state` at exchange time (it is only
+   * echoed on the callback redirect). Callers are responsible for verifying
+   * `state` themselves upon receiving the callback, before calling this method.
+   */
+  async connectExchange(code: string): Promise<ConnectExchangeResponse> {
+    if (!this.appName) {
+      throw new Error('appName is required for Connect exchange')
+    }
+
+    const response = await this.post('/auth/connect/exchange', {
+      json: {
+        connect_code: code,
+        app_name: this.appName,
+      },
+      skipAuth: true,
+    })
+
+    if (response.status === 400) {
+      const json = (await response.json().catch(() => ({}))) as {
+        detail?: { message?: string }
+      }
+      throw new ConnectInvalidGrantError(json.detail?.message ?? 'invalid or expired connect_code')
+    }
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(`Connect exchange failed: ${response.status} ${text}`)
+    }
+
+    return (await response.json()) as ConnectExchangeResponse
+  }
+
+  /**
    * Build a Connect login URL.
    *
    * Signs the MetaInfo JWT and constructs the full URL that a user should be
@@ -570,8 +615,10 @@ export class Hezor2APIClient extends BaseAPIClient {
    *
    * @param frontendUrl - The Hezor frontend base URL (e.g. "https://your-hezor-domain.com")
    * @param callbackUrl - The callback URL to redirect to after login
+   * @param state - Opaque CSRF-protection value, echoed back unchanged on the
+   *   callback redirect; the caller must generate and verify it
    */
-  async buildConnectUrl(frontendUrl: string, callbackUrl: string): Promise<string> {
+  async buildConnectUrl(frontendUrl: string, callbackUrl: string, state?: string): Promise<string> {
     if (!this.appName) {
       throw new Error('appName is required for Connect URL')
     }
@@ -583,6 +630,9 @@ export class Hezor2APIClient extends BaseAPIClient {
       meta_info: metaInfoJwt,
       callback_url: callbackUrl,
     })
+    if (state !== undefined) {
+      params.set('state', state)
+    }
 
     return `${frontendUrl.replace(/\/+$/, '')}/connect?${params}`
   }
