@@ -57,6 +57,30 @@ describe('Hezor2APIClient - Connect exchange', () => {
     )
   })
 
+  it('should throw ConnectInvalidGrantError on 400 app_mismatch (same wire code as invalid_grant)', async () => {
+    // 服务端 InvalidGrantError/AppMismatchError 在 wire 层共用同一个
+    // code="invalid_grant"，客户端无法可靠区分，故统一映射为
+    // ConnectInvalidGrantError（详见 hezor2 PR #622 说明）。
+    fetchSpy.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          detail: { code: 'invalid_grant', message: 'app_name mismatch with issued code' },
+        }),
+        { status: 400 },
+      ),
+    )
+
+    let error: unknown
+    try {
+      await client.connectExchange('mismatched-code')
+    } catch (err) {
+      error = err
+    }
+
+    expect(error).toBeInstanceOf(ConnectInvalidGrantError)
+    expect((error as ConnectInvalidGrantError).detail).toBe('app_name mismatch with issued code')
+  })
+
   it('should throw when appName is not configured', async () => {
     const anonymousClient = new Hezor2APIClient({ baseUrl: 'http://localhost:8000/api/v1' })
 
