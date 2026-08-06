@@ -293,6 +293,8 @@ export class Hezor2SDK {
   /** Pull configs from configuration center. */
   async pullConfigs(options?: {
     keys?: string[]
+    prefix?: string
+    scope?: 'all' | 'public' | 'user'
     globalBaseUrl?: string
   }): Promise<PullConfigsResponse> {
     return this.client.pullConfigs(options)

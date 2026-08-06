@@ -411,10 +411,14 @@ export class Hezor2APIClient extends BaseAPIClient {
   }
   async pullConfigs(options?: {
     keys?: string[]
+    prefix?: string
+    scope?: 'all' | 'public' | 'user'
     globalBaseUrl?: string
   }): Promise<PullConfigsResponse> {
     const webhookPayload: Record<string, unknown> = {}
     if (options?.keys != null) webhookPayload['keys'] = options.keys
+    if (options?.prefix != null) webhookPayload['prefix'] = options.prefix
+    if (options?.scope != null) webhookPayload['scope'] = options.scope
     if (options?.globalBaseUrl != null) {
       webhookPayload['context_variables'] = {
         global_base_url: options.globalBaseUrl,
