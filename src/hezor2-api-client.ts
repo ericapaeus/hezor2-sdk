@@ -409,6 +409,14 @@ export class Hezor2APIClient extends BaseAPIClient {
     }
     return resp.data!
   }
+  /**
+   * Pull configs from configuration center (`POST /webhook/`, action `pull_configs`).
+   *
+   * @param options.keys - 只拉取指定 key 列表（不传则不按 key 精确过滤）
+   * @param options.prefix - 只拉取 key 以此前缀开头的配置项，与 keys 可同时使用（交集）
+   * @param options.scope - 拉取范围：'all'（默认，公共+私有）/ 'public'（仅公共）/ 'user'（仅私有）
+   * @param options.globalBaseUrl - 用于插值 ${GLOBAL_BASE_URL} 的平台访问地址
+   */
   async pullConfigs(options?: {
     keys?: string[]
     prefix?: string

@@ -445,6 +445,40 @@ describe('Hezor2APIClient', () => {
     expect(body.payload).toEqual({})
   })
 
+  it('should call pull_configs with prefix', async () => {
+    const mockResponse: WebhookResponse = {
+      action: 'pull_configs',
+      status: 'ok',
+      data: { public: {}, user: { DATAHUB__MY_VAR: 'x' } },
+      message: '',
+    }
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    await client.pullConfigs({ prefix: 'DATAHUB__' })
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(body.payload.prefix).toBe('DATAHUB__')
+    expect(body.payload).not.toHaveProperty('scope')
+  })
+
+  it('should call pull_configs with scope', async () => {
+    const mockResponse: WebhookResponse = {
+      action: 'pull_configs',
+      status: 'ok',
+      data: { public: {}, user: {} },
+      message: '',
+    }
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    await client.pullConfigs({ scope: 'user' })
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(body.payload.scope).toBe('user')
+    expect(body.payload).not.toHaveProperty('prefix')
+  })
+
   // --- webhookHelp ---
 
   it('should call webhook_help', async () => {
