@@ -130,4 +130,7 @@ export type {
   RefreshTunnelTokenResponse,
   // LLM
   ChatMessage,
+  HezorStreamEvent,
+  HezorStreamEventType,
+  HezorNoticeReason,
 } from './types.js'

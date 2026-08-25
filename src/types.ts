@@ -310,3 +310,62 @@ export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
   content: string
 }
+
+/**
+ * Hezor 扩展事件 `hezor_event.type` 的已知取值。
+ *
+ * 对应 hezor2 OpenAI-compatible 协议 `delta.hezor_event.type` 扩展字段
+ * （详见 hezor2 `web/content/api-reference/llm-api/overview.md`）。
+ * 其中 `retry_notice` / `fallback_notice` 是后端在检测到逻辑性失败
+ * （空流 / 长度耗尽 / overload 等）时插入的无感重试提示与兜底文案。
+ */
+export type HezorStreamEventType =
+  | 'thinking'
+  | 'status'
+  | 'tool_call'
+  | 'phase'
+  | 'iteration'
+  | 'progress'
+  | 'citation'
+  | 'presentation'
+  | 'question'
+  | 'client_action'
+  | 'retry_notice'
+  | 'fallback_notice'
+
+/**
+ * `retry_notice` / `fallback_notice` 的失败分类（`hezor_event.reason`）。
+ */
+export type HezorNoticeReason =
+  | 'empty_stream'
+  | 'length_limit'
+  | 'content_filter'
+  | 'overload'
+  | 'embedded_error'
+
+/**
+ * 流式过程中收到的 Hezor 扩展事件（`hezor_event`）。
+ *
+ * 该字段不属于 OpenAI 官方规范，标准 OpenAI SDK/客户端会忽略；通过
+ * `HezorLLMClient.chatCompletionStream` 的 `onEvent` 回调透出，供调用方
+ * 识别并渲染专属 UI（例如把 `retry_notice` / `fallback_notice` 呈现为
+ * "AI 正在补救"的提示，而不是把它当成模型的真实思考或正式回答）。
+ *
+ * `payload` 携带后端透传的原始扩展载荷，`reason` / `attempt` /
+ * `max_attempts` / `next_retry_in` 是对 `retry_notice` / `fallback_notice`
+ * 常用字段的便捷取用（可选，存在时才提供）。
+ */
+export interface HezorStreamEvent {
+  /** 事件类型，见 {@link HezorStreamEventType}。 */
+  type: HezorStreamEventType
+  /** 后端透传的原始扩展载荷（完整结构，含全部可选字段）。 */
+  payload: Record<string, unknown>
+  /** `retry_notice` / `fallback_notice` 的失败分类。 */
+  reason?: HezorNoticeReason
+  /** 当前重试次数（1-based）。 */
+  attempt?: number
+  /** 最大重试次数。 */
+  max_attempts?: number
+  /** 距下一次重试的预计秒数（仅 `retry_notice` 携带）。 */
+  next_retry_in?: number
+}

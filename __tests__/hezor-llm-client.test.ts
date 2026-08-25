@@ -120,5 +120,120 @@ describe('HezorLLMClient', () => {
       const callArgs = mockCreate.mock.calls[0]![0]
       expect(callArgs.stream).toBe(true)
     })
+
+    // ── hezor_event 透出（retry_notice / fallback_notice） ──────────────────
+
+    it('retry_notice — 经 onEvent 透出，且不混入正文累积', async () => {
+      async function* fakeStream() {
+        // retry_notice：提示文案走 reasoning_content（不进入 content）
+        yield {
+          choices: [
+            {
+              delta: {
+                reasoning_content: '（检测到空流，正在自动重试…）',
+                hezor_event: {
+                  type: 'retry_notice',
+                  reason: 'empty_stream',
+                  attempt: 1,
+                  max_attempts: 3,
+                  next_retry_in: 1.0,
+                },
+              },
+            },
+          ],
+        }
+        // 正常正文
+        yield { choices: [{ delta: { content: '这是正常回答' } }] }
+      }
+      mockCreate.mockResolvedValue(fakeStream())
+
+      const events: any[] = []
+      const deltas: string[] = []
+      const result = await client.chatCompletionStream(
+        [{ role: 'user', content: 'hi' }],
+        (acc) => deltas.push(acc),
+        { onEvent: (e) => events.push(e) },
+      )
+
+      // 正文累积不含 retry_notice 的提示文案
+      expect(result).toBe('这是正常回答')
+      expect(deltas).toEqual(['这是正常回答'])
+      // 事件透出完整字段
+      expect(events).toHaveLength(1)
+      expect(events[0]!.type).toBe('retry_notice')
+      expect(events[0]!.reason).toBe('empty_stream')
+      expect(events[0]!.attempt).toBe(1)
+      expect(events[0]!.max_attempts).toBe(3)
+      expect(events[0]!.next_retry_in).toBe(1.0)
+      expect(events[0]!.payload).toEqual({
+        type: 'retry_notice',
+        reason: 'empty_stream',
+        attempt: 1,
+        max_attempts: 3,
+        next_retry_in: 1.0,
+      })
+    })
+
+    it('fallback_notice — 经 onEvent 透出，兜底文案仍进入正文（向后兼容）', async () => {
+      async function* fakeStream() {
+        // fallback_notice：兜底文案走 content，最终以 finish_reason=stop 结束
+        yield {
+          choices: [
+            {
+              delta: {
+                content: '抱歉，暂时无法完成该请求，请稍后重试。',
+                hezor_event: {
+                  type: 'fallback_notice',
+                  reason: 'overload',
+                  attempt: 3,
+                  max_attempts: 3,
+                },
+              },
+              finish_reason: 'stop',
+            },
+          ],
+        }
+      }
+      mockCreate.mockResolvedValue(fakeStream())
+
+      const events: any[] = []
+      const result = await client.chatCompletionStream(
+        [{ role: 'user', content: 'hi' }],
+        vi.fn(),
+        { onEvent: (e) => events.push(e) },
+      )
+
+      // 兜底文案与旧行为一致进入返回（向后兼容），但同时能识别出这是兜底
+      expect(result).toContain('暂时无法完成')
+      expect(events).toHaveLength(1)
+      expect(events[0]!.type).toBe('fallback_notice')
+      expect(events[0]!.reason).toBe('overload')
+      expect(events[0]!.attempt).toBe(3)
+      expect(events[0]!.max_attempts).toBe(3)
+      expect(events[0]!.next_retry_in).toBeUndefined()
+    })
+
+    it('未提供 onEvent — hezor_event 静默忽略，行为与旧客户端一致', async () => {
+      async function* fakeStream() {
+        yield {
+          choices: [
+            {
+              delta: {
+                content: '正常回答',
+                hezor_event: { type: 'fallback_notice', reason: 'overload' },
+              },
+            },
+          ],
+        }
+      }
+      mockCreate.mockResolvedValue(fakeStream())
+
+      const result = await client.chatCompletionStream(
+        [{ role: 'user', content: 'hi' }],
+        vi.fn(),
+      )
+
+      expect(result).toBe('正常回答')
+    })
   })
 })
